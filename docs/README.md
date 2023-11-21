@@ -1,7 +1,7 @@
 # Botender - Blog
 An intelligent interactive social robot to order drinks from. Created for a Furhat Robot.
 
-![Botender Logo](/pages-doc/images/Botender_logo_clear.png "Botender Logo")
+![Botender Logo](images/Botender_logo_clear.png "Botender Logo")
 ## Authors
 Till Grutschus, Teodora Ljubevska, Lasse Frommelt, Raoul Dankert, Jurek Sander
 ## Scope
@@ -18,7 +18,7 @@ The goal of our second meeting was to define the control flow of our dialogue wi
 
 The following diagram was the result of our brainstorming session and describes the communication between the customer, the two subsystems and the OpenAI API in the initial dialogue:
 
-![Control Flow Diagram](/pages-doc/images/ControlFlowDiagram.png "Control Flow Diagram")
+![Control Flow Diagram](images/ControlFlowDiagram.png "Control Flow Diagram")
 
 The dialogue contains three different phases:
 
@@ -30,7 +30,7 @@ Optional, the dialogue can be extended with an open section. The interaction sub
 
 After the definition of the control flow, we tried to define a system architecture that can realize the dialogue. We designed it such that it is modular and can be extended easily. The following diagram shows the high-level system architecture as a component diagram:
 
-![Component Diagram](/pages-doc/images/ComponentDiagram.png "Component Diagram")
+![Component Diagram](images/ComponentDiagram.png "Component Diagram")
 
 The Botender system consists of three subsystems:
 
@@ -40,6 +40,6 @@ The Botender system consists of three subsystems:
 
 After this meeting, we had a common understanding of the control flow and the system architecture. We used this to define the main tasks for the whole project and set deadlines for them. The tasks are organised as GitHub issues and displayed in the project board of our GitHub repository. The following screenshot shows the project board after the meeting:
 
-![Timeline](/pages-doc/images/Timeline0.png "Timeline")
-![Timeline](/pages-doc/images/Timeline1.png "Timeline")
-![Timeline](/pages-doc/images/Timeline2.png "Timeline")
+![Timeline](images/Timeline0.png "Timeline")
+![Timeline](images/Timeline1.png "Timeline")
+![Timeline](images/Timeline2.png "Timeline")

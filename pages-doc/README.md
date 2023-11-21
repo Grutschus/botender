@@ -12,7 +12,7 @@ This blog will describe and follow the planning and development phases of our pr
 ## Introduction
 TODO
 
-First blog entry, introduction to botender, first meeting, creation of specification document
+First blog entry, introduction to botender, first meeting (incl. image), creation of specification document
 ## Control Flow & System Architecture
 The goal of our second meeting was to define the control flow of our dialogue with Botender and the high-level system architecture. This was required to get a common understanding of our application and define the tasks accordingly.
 

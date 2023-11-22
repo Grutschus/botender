@@ -24,11 +24,12 @@ def parse_args():
 
 
 def setup_logging(debug: bool) -> None:
-    log_format = (
+    log_format_color = (
         "%(asctime)s - "
         "%(log_color)s%(levelname)s%(reset)s - "
         "%(module)s - %(message)s"
     )
+    log_format = "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
     log_colors_config = {
         "DEBUG": "cyan",
         "INFO": "green",
@@ -38,7 +39,7 @@ def setup_logging(debug: bool) -> None:
     }
 
     colorlog_formatter = colorlog.ColoredFormatter(
-        log_format,
+        log_format_color,
         datefmt="%Y-%m-%d %H:%M:%S",
         reset=True,
         log_colors=log_colors_config,
@@ -51,7 +52,7 @@ def setup_logging(debug: bool) -> None:
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     log_filename = f"logs/botender-{timestamp}.log"
     file_handler = logging.FileHandler(log_filename)
-    file_handler.setFormatter(colorlog_formatter)
+    file_handler.setFormatter(logging.Formatter(log_format))
 
     root_logger = logging.getLogger()
     root_logger.addHandler(console_handler)

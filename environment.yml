@@ -28,3 +28,4 @@ dependencies:
       - opencv_jupyter_ui>=1.4
       - py-feat>=0.6
       - skorch>=0.15
+      - colorlog>=6.7

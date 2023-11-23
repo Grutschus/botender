@@ -9,12 +9,12 @@ from time import sleep
 
 import colorlog
 import cv2  # type: ignore
-from interaction_thread import InteractionThread
-from pyfeat_thread import PyfeatThread
-from webcam_processor import WebcamProcessor
+from botender.interaction.interaction import InteractionThread
+from botender.perception.perception import PerceptionManager
+from botender.webcam_processor import WebcamProcessor
 
 logger = logging.getLogger(__name__)
-pyfeat_thread: PyfeatThread
+perception_manager: PerceptionManager
 interaction_thread: InteractionThread
 webcam_processor: WebcamProcessor
 SCREEN_WIDTH: int = 640
@@ -85,30 +85,31 @@ def setup():
     )
 
     # PyFeat
-    global pyfeat_thread
-    pyfeat_thread = PyfeatThread(webcam_processor)
-    pyfeat_thread.start()
+    global perception_manager
+    perception_manager = PerceptionManager(webcam_processor)
 
     # Interaction
-    global interaction_thread
-    interaction_thread = InteractionThread(pyfeat_thread, webcam_processor)
-    interaction_thread.start()
+    # global interaction_thread
+    # interaction_thread = InteractionThread(perception_manager, webcam_processor)
+    # interaction_thread.start()
 
 
 def teardown():
     """Main teardown function."""
     logger.info("Stopping botender...")
 
-    pyfeat_thread.stopThread()
-    interaction_thread.stopThread()
-    pyfeat_thread.join()
-    interaction_thread.join()
+    global perception_manager
+    del perception_manager
+
+    # interaction_thread.stopThread()
+    # interaction_thread.join()
 
 
 def render():
     """Main render loop."""
 
     webcam_processor.capture()
+    perception_manager.run()
     webcam_processor.render()
 
 

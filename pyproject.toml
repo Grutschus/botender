@@ -28,8 +28,8 @@ exclude = [
 line-length = 88
 indent-width = 4
 
-# Assume Python 3.8
-target-version = "py38"
+# Assume Python 3.10
+target-version = "py310"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
@@ -56,10 +56,39 @@ skip-magic-trailing-comma = false
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
 
-[[tool.mypy.overrides]]
-module = ["mmaction.*", "mmengine.*"]
-ignore_missing_imports = true
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.poetry]
+name = "botender"
+version = "0.0.1"
+description = "An intelligent interactive social robot to order drinks from. Created for a Furhat Robot."
+authors = ["Till Grutschus <till.grutschus@outlook.com>"]
+repository = "https://github.com/Grutschus/botender"
+license = "MIT License"
+readme = "README.md"
+packages = [{ include = "botender" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = "^2.1"
+torchvision = "^0.16"
+opencv-python = "^4.8"
+furhat-remote-api = "^1.0"
+imageio = { extras = ["ffmpeg"], version = "^2.33" }
+numpy = "^1.26"
+py-feat = "^0.6"
+colorlog = "^6.7"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^2.15"
+ruff = "^0.1"
+jupyter = "^1.0"
+ipympl = "^0.9"
+opencv-jupyter-ui = "^1.4"
+pandas-stubs = "^2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

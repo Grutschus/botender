@@ -6,10 +6,10 @@ from webcam_thread import WebCamThread
 
 # define the InteractionThread class
 class InteractionThread(Thread):
-    def __init__(self, pyfeat_thread: PyfeatThread, webcamThread: WebCamThread):
+    def __init__(self, pyfeat_thread: PyfeatThread, webCamThread: WebCamThread):
         super(InteractionThread, self).__init__()
         self.pyfeatThread = pyfeat_thread
-        self.webCamThread = webcamThread
+        self.webCamThread = webCamThread
 
     def run(self):
         print("InteractionThread - Started.")

@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 pyfeat_thread: PyfeatThread
 interaction_thread: InteractionThread
 webcam_processor: WebcamProcessor
+SCREEN_WIDTH: int = 640
+SCREEN_HEIGHT: int = 480
 
 
 def parse_args():
@@ -78,16 +80,18 @@ def setup():
 
     # Webcam
     global webcam_processor
-    webcam_processor = WebcamProcessor()
+    webcam_processor = WebcamProcessor(
+        frame_height=SCREEN_HEIGHT, frame_width=SCREEN_WIDTH
+    )
 
     # PyFeat
     global pyfeat_thread
-    pyfeat_thread = PyfeatThread()
+    pyfeat_thread = PyfeatThread(webcam_processor)
     pyfeat_thread.start()
 
     # Interaction
     global interaction_thread
-    interaction_thread = InteractionThread(pyfeat_thread)
+    interaction_thread = InteractionThread(pyfeat_thread, webcam_processor)
     interaction_thread.start()
 
 

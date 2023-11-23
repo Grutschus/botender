@@ -11,6 +11,16 @@
             ],
             "console": "integratedTerminal",
             "justMyCode": false
+        },
+        {
+            "name": "Run Botender",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/botender.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--debug"
+            ]
         }
     ]
 }

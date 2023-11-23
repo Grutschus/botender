@@ -56,6 +56,7 @@ class WebcamProcessor:
 
     def __del__(self):
         """Deinitialize the ImageProcessor class."""
+        logger.debug("Deinitializing WebcamProcessor...")
         self.camera.release()
         cv2.destroyAllWindows()
 

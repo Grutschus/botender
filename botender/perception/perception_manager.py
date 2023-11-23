@@ -1,5 +1,7 @@
 import logging
 import multiprocessing
+from multiprocessing import Queue
+
 from botender.perception.detection_worker import DetectionWorker
 from botender.webcam_processor import WebcamProcessor
 
@@ -11,10 +13,9 @@ class PerceptionManager:
     detection worker process and communicating results."""
 
     stopped: bool = False
-    emotion: str = ""
 
-    def __init__(self, webcam_processor: WebcamProcessor):
-        logger.debug("Initializing PyfeatThread...")
+    def __init__(self, logging_queue: Queue, webcam_processor: WebcamProcessor):
+        logger.debug("Initializing PerceptionManager...")
         self.webcam_processor = webcam_processor
 
         # Initializing child workers
@@ -24,6 +25,7 @@ class PerceptionManager:
         self.result_list = self.mp_manager.list()
         self.result_list_lock = multiprocessing.Lock()
         self.child_process = DetectionWorker(
+            logging_queue,
             self.frame_list,
             self.result_list,
             self.frame_list_lock,
@@ -33,6 +35,7 @@ class PerceptionManager:
         self.child_process.start()
 
     def __del__(self):
+        logger.debug("Terminating child worker...")
         self.child_process.terminate()
 
     def run(self):

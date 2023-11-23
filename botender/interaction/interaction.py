@@ -3,7 +3,7 @@ import logging
 from threading import Thread
 from botender.webcam_processor import WebcamProcessor
 
-from botender.perception.perception import PerceptionManager
+from botender.perception.perception_manager import PerceptionManager
 
 
 logger = logging.getLogger(__name__)

@@ -16,7 +16,7 @@
             "name": "Run Botender",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/botender.py",
+            "program": "${workspaceFolder}/botender/main.py",
             "console": "integratedTerminal",
             "args": [
                 "--debug"

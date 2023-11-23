@@ -1,14 +1,24 @@
 import logging
 import time
+from dataclasses import dataclass
 from multiprocessing import Process, Queue
 from multiprocessing.managers import ListProxy
 from multiprocessing.synchronize import Lock as LockType
+
+
 import botender.logging_utils as logging_utils
 from botender.perception.detectors.facial_expression_detector import (
     FacialExpressionDetector,
 )
+from botender.types import Rectangle
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DetectionResult:
+    faces: list[Rectangle]
+    """A list of rectangles representing the faces detected in the frame."""
 
 
 class DetectionWorker(Process):
@@ -34,19 +44,33 @@ class DetectionWorker(Process):
         facial_expression_detector = FacialExpressionDetector()
         logger.debug("Successfully initialized detector. Starting work loop...")
 
+        # Fresh start
+        self.frame_list[:] = []
         while True:
+            # Get work
             self.frame_list_lock.acquire()
             if len(self.frame_list) == 0:
-                time.sleep(0.01)
                 self.frame_list_lock.release()
+                time.sleep(0.01)
                 continue
-
             work_frame = self.frame_list.pop()
+            if len(self.frame_list) > 0:
+                logger.warning(
+                    f"Can't keep up! Dropping {len(self.frame_list)} frames."
+                )
+                self.frame_list[:] = []
             self.frame_list_lock.release()
+
+            # React to stop signal
+            if work_frame is None:
+                logger.debug("Received stop signal. Exiting...")
+                return
 
             # Do the work
             faces = facial_expression_detector.detect_faces(work_frame)
 
+            result = DetectionResult(faces=faces)
+
             self.result_list_lock.acquire()
-            self.result_list.append(faces)
+            self.result_list.append(result)
             self.result_list_lock.release()

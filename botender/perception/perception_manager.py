@@ -2,7 +2,7 @@ import logging
 import multiprocessing
 from multiprocessing import Queue
 
-from botender.perception.detection_worker import DetectionWorker
+from botender.perception.detection_worker import DetectionResult, DetectionWorker
 from botender.webcam_processor import WebcamProcessor
 
 logger = logging.getLogger(__name__)
@@ -13,10 +13,14 @@ class PerceptionManager:
     detection worker process and communicating results."""
 
     stopped: bool = False
+    current_result: DetectionResult | None = None
 
     def __init__(self, logging_queue: Queue, webcam_processor: WebcamProcessor):
         logger.debug("Initializing PerceptionManager...")
         self.webcam_processor = webcam_processor
+
+        # Debug flags
+        self._flag_show_face_rectangles = False
 
         # Initializing child workers
         self.mp_manager = multiprocessing.Manager()
@@ -34,28 +38,50 @@ class PerceptionManager:
         logger.debug("Spawning child worker...")
         self.child_process.start()
 
-    def __del__(self):
+    def shutdown(self):
         logger.debug("Terminating child worker...")
-        self.child_process.terminate()
+        self.frame_list[:] = [None]
+        self.child_process.join(1)
+        if self.child_process.is_alive():
+            logger.warning(
+                "Child worker could not be terminated gracefully. Killing..."
+            )
+            self.child_process.terminate()
 
-    def run(self):
+    @property
+    def flag_show_face_rectangles(self) -> bool:
+        return self._flag_show_face_rectangles
+
+    @flag_show_face_rectangles.setter
+    def flag_show_face_rectangles(self, value: bool) -> None:
+        # switching off
+        if not value and self._flag_show_face_rectangles:
+            self.webcam_processor.remove_frame_modifier(modifier_key="face_rectangles")
+        self._flag_show_face_rectangles = value
+
+    def run(self) -> None:
         # Maintaing the list of frames the child workers will process
         # Add new work
         current_frame = self.webcam_processor.get_current_frame()
         self.frame_list_lock.acquire()
-        # Prevent backlog of frames
-        if len(self.frame_list) > 0:
-            self.frame_list[:] = []  # ListProxy does not support clear()
         self.frame_list.append(current_frame)
         self.frame_list_lock.release()
 
         # Get results
         self.result_list_lock.acquire()
         if len(self.result_list) > 0:
-            results = self.result_list.pop()
+            result: DetectionResult = self.result_list.pop()
             self.result_list[:] = []
-            # TODO Define a dataclass for these results
-            self.webcam_processor.add_rectangles_to_current_frame(
-                results, modifier_key="faces"
-            )
+            self.current_result = result  # No synchronization needed due to GIL
         self.result_list_lock.release()
+
+        # Render results
+        self.render_face_rectangles()
+
+    def render_face_rectangles(self) -> None:
+        if self.current_result is None:
+            return
+        if self.flag_show_face_rectangles:
+            self.webcam_processor.add_rectangles_to_current_frame(
+                self.current_result.faces, modifier_key="face_rectangles"
+            )

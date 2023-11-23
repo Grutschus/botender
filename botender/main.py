@@ -10,9 +10,10 @@ import cv2  # type: ignore
 import botender.logging_utils as logging_utils
 from botender.perception.perception_manager import PerceptionManager
 from botender.webcam_processor import WebcamProcessor
+from botender.interaction.interaction_coordinator import InteractionThread
 
 perception_manager: PerceptionManager
-# interaction_thread: InteractionThread
+interaction_thread: InteractionThread
 webcam_processor: WebcamProcessor
 
 LOGGING_QUEUE: Queue = Queue()
@@ -55,9 +56,9 @@ def setup(debug: bool = False):
     )
 
     # Interaction
-    # global interaction_thread
-    # interaction_thread = InteractionThread(perception_manager, webcam_processor)
-    # interaction_thread.start()
+    global interaction_thread
+    interaction_thread = InteractionThread(perception_manager, webcam_processor)
+    interaction_thread.start()
 
 
 def teardown():
@@ -65,13 +66,13 @@ def teardown():
     logger.info("Stopping botender...")
 
     global perception_manager
-    del perception_manager
+    perception_manager.shutdown()
 
     global webcam_processor
-    del webcam_processor
+    webcam_processor.shutdown()
 
-    # interaction_thread.stopThread()
-    # interaction_thread.join()
+    interaction_thread.stopThread()
+    interaction_thread.join()
 
     logger.debug("Stopping logging process...")
     logging_utils.stop_logging_process(LOGGING_QUEUE)
@@ -96,8 +97,14 @@ if __name__ == "__main__":
         while run:
             render()
             sleep(0.01)  # 100 FPS
-            if cv2.waitKey(1) & 0xFF == ord("q"):
+            if (key := cv2.waitKey(1) & 0xFF) == ord("q"):
                 run = False
+            elif key == ord("f"):
+                logger.info("Toggling rendering of face boxes...")
+                perception_manager.flag_show_face_rectangles = (
+                    not perception_manager.flag_show_face_rectangles
+                )
+
     except KeyboardInterrupt:
         pass
 

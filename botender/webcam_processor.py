@@ -1,21 +1,20 @@
 """Class for capturing the webcam footage and rendering stuff to the screen."""
 
-import cv2  # type: ignore
-import numpy as np
 import logging
 import threading
-from typing import Callable
 from functools import partial
+from typing import Callable
 
-ModifierKeyType = int | str
+import cv2  # type: ignore
+import numpy as np
+
+from botender.types import Rectangle
+
 
 logger = logging.getLogger(__name__)
 
+ModifierKeyType = int | str
 FrameModifier = Callable[[np.ndarray], np.ndarray]
-Point = tuple[float, float]
-"""Point is a tuple of two integers, x and y."""
-Rectangle = tuple[Point, Point]
-"""Rectangle is a tuple of two points, the lower left corner and the upper right corner."""
 
 
 class WebcamProcessor:
@@ -54,7 +53,7 @@ class WebcamProcessor:
         cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(self.window_name, self.FRAME_WIDTH, self.FRAME_HEIGHT)
 
-    def __del__(self):
+    def shutdown(self):
         """Deinitialize the ImageProcessor class."""
         logger.debug("Deinitializing WebcamProcessor...")
         self.camera.release()

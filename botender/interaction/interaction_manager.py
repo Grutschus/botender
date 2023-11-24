@@ -1,0 +1,81 @@
+import logging
+from threading import Thread
+
+from furhat_remote_api import FurhatRemoteAPI  # type: ignore
+
+from botender.interaction.gaze_coordinator import GazeCoordinatorThread
+from botender.interaction.gaze_coordinator import GazeClasses
+from botender.interaction.interaction_coordinator import InteractionCoordinator
+from botender.perception.perception_manager import PerceptionManager
+from botender.webcam_processor import WebcamProcessor
+
+logger = logging.getLogger(__name__)
+
+
+# define the InteractionManagerThread class
+class InteractionManagerThread(Thread):
+    """The InteractionManagerThread is responsible for starting an interaction
+    as soon as a face is detected.
+
+    Currently, the interaction runs in the same thread, which means that the
+    InteractionManager will start looking for new faces only after the
+    interaction has finished.
+    """
+
+    _stopped: bool = False
+    _perception_manager: PerceptionManager
+    _webcam_processor: WebcamProcessor
+    _gaze_coordinator: GazeCoordinatorThread
+    _furhat: FurhatRemoteAPI
+    _face_present_frame_counter: int = 0
+
+    def __init__(
+        self,
+        perception_manager: PerceptionManager,
+        webcam_processor: WebcamProcessor,
+        furhat_remote_address: str,
+    ):
+        super(InteractionManagerThread, self).__init__()
+        self._perception_manager = perception_manager
+        self._webcam_processor = webcam_processor
+        self._furhat = FurhatRemoteAPI(furhat_remote_address)
+        self._gaze_coordinator = GazeCoordinatorThread(
+            self._furhat, self._perception_manager, self._webcam_processor
+        )
+
+        self._gaze_coordinator.start()
+
+    def stopThread(self):
+        logger.debug("Stopping InteractionManagerThread...")
+        self._stopped = True
+        self._gaze_coordinator.stopThread()
+        self._gaze_coordinator.join()
+        # TODO: set furhat to idle state
+
+    def start_interaction(self):
+        """Create a new InteractionCoordinator and launch the interaction."""
+        logger.info("Starting interaction...")
+        interaction_coordinator = InteractionCoordinator(
+            self._perception_manager, self._webcam_processor, self._furhat
+        )
+        interaction_coordinator.coordinate_interaction()
+
+    def should_start_interaction(self) -> bool:
+        """Analyzes the output of the perception manager and checks if a new face
+        has been detected and present for a given time."""
+        if self._perception_manager.face_present:
+            self._face_present_frame_counter += 1
+        else:
+            self._face_present_frame_counter = 0
+        return self._face_present_frame_counter > 60
+
+    def run(self):
+        logger.info("Started...")
+        while not self._stopped:
+            if self.should_start_interaction():
+                self.start_interaction()
+            else:
+                self._gaze_coordinator.set_gaze_state(GazeClasses.IDLE)
+
+            # else: randomly add whistles or other idle sounds and gestures
+        logger.info("Finished.")

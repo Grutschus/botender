@@ -93,20 +93,19 @@ def configure_publisher(queue: Queue):
     root_logger.setLevel(logging.DEBUG)
 
 
-def start_logging_process(debug: bool, queue: Queue):
+def start_logging_process(debug: bool, queue: Queue) -> Process:
     """Setup logging process."""
 
-    LOGGING_PROCESS = Process(target=_listener_process, args=(queue, debug))
-    LOGGING_PROCESS.start()
+    p = Process(target=_listener_process, args=(queue, debug))
+    p.start()
+
+    return p
 
 
-def stop_logging_process(queue: Queue):
+def stop_logging_process(queue: Queue, process: Process):
     """Stop logging process."""
-
-    if LOGGING_PROCESS is None:
-        return
 
     queue.put_nowait(None)
     queue.close()
     queue.join_thread()
-    LOGGING_PROCESS.join()
+    process.join()

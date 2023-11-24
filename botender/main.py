@@ -2,23 +2,25 @@
 
 import argparse
 import logging
-from multiprocessing import Queue
+from multiprocessing import Queue, Process
 from time import sleep
 
 import cv2  # type: ignore
 
 import botender.logging_utils as logging_utils
+from botender.interaction.interaction_manager import InteractionManagerThread
 from botender.perception.perception_manager import PerceptionManager
 from botender.webcam_processor import WebcamProcessor
-from botender.interaction.interaction_coordinator import InteractionThread
 
 perception_manager: PerceptionManager
-interaction_thread: InteractionThread
+interaction_thread: InteractionManagerThread
 webcam_processor: WebcamProcessor
 
 LOGGING_QUEUE: Queue = Queue()
+LOGGING_PROCESS: Process | None = None
 SCREEN_WIDTH: int = 640
 SCREEN_HEIGHT: int = 480
+MAX_FPS: int = 30
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +34,21 @@ def parse_args():
         help="Enable debug mode",
     )
 
+    parser.add_argument(
+        "--furhat_remote_address",
+        type=str,
+        help="The address of the Furhat remote server",
+        default="localhost",
+    )
+
     return parser.parse_args()
 
 
-def setup(debug: bool = False):
+def setup(debug: bool = False, furhat_remote_address: str = "localhost"):
     """Main setup function."""
     # Logging
-    logging_utils.start_logging_process(debug, LOGGING_QUEUE)
+    global LOGGING_PROCESS
+    LOGGING_PROCESS = logging_utils.start_logging_process(debug, LOGGING_QUEUE)
     logging_utils.configure_publisher(LOGGING_QUEUE)
 
     logger.info("Starting botender...")
@@ -57,7 +67,9 @@ def setup(debug: bool = False):
 
     # Interaction
     global interaction_thread
-    interaction_thread = InteractionThread(perception_manager, webcam_processor)
+    interaction_thread = InteractionManagerThread(
+        perception_manager, webcam_processor, furhat_remote_address
+    )
     interaction_thread.start()
 
 
@@ -65,22 +77,22 @@ def teardown():
     """Main teardown function."""
     logger.info("Stopping botender...")
 
+    interaction_thread.stopThread()
+    interaction_thread.join()
+
     global perception_manager
     perception_manager.shutdown()
 
     global webcam_processor
     webcam_processor.shutdown()
 
-    interaction_thread.stopThread()
-    interaction_thread.join()
-
     logger.debug("Stopping logging process...")
-    logging_utils.stop_logging_process(LOGGING_QUEUE)
+    global LOGGING_PROCESS
+    logging_utils.stop_logging_process(LOGGING_QUEUE, LOGGING_PROCESS)
 
 
 def render():
     """Main render loop."""
-
     webcam_processor.capture()
     perception_manager.run()
     webcam_processor.render()
@@ -89,21 +101,26 @@ def render():
 if __name__ == "__main__":
     args = parse_args()
 
-    setup(debug=args.debug)
+    setup(debug=args.debug, furhat_remote_address=args.furhat_remote_address)
 
     # Enter the render loop
     run = True
     try:
         while run:
             render()
-            sleep(0.01)  # 100 FPS
+            sleep(1 / MAX_FPS)
             if (key := cv2.waitKey(1) & 0xFF) == ord("q"):
                 run = False
             elif key == ord("f"):
                 logger.info("Toggling rendering of face boxes...")
-                perception_manager.flag_show_face_rectangles = (
-                    not perception_manager.flag_show_face_rectangles
-                )
+                webcam_processor.debug_flags[
+                    "face_rectangles"
+                ] = not webcam_processor.debug_flags["face_rectangles"]
+            elif key == ord("d"):
+                logger.info("Toggling debug screen...")
+                webcam_processor.debug_flags[
+                    "debug_info"
+                ] = not webcam_processor.debug_flags["debug_info"]
 
     except KeyboardInterrupt:
         pass

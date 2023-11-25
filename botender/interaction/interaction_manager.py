@@ -55,7 +55,7 @@ class InteractionManagerThread(Thread):
         self._gaze_coordinator.join()
         # TODO: set furhat to idle state
 
-    def start_interaction(self):
+    def _start_interaction(self):
         """Create a new InteractionCoordinator and launch the interaction."""
 
         logger.info("Starting interaction...")
@@ -64,7 +64,7 @@ class InteractionManagerThread(Thread):
         )
         interaction_coordinator.coordinate_interaction()
 
-    def should_start_interaction(self) -> bool:
+    def _should_start_interaction(self) -> bool:
         """Analyzes the output of the perception manager and checks if a new face
         has been detected and present for a given time."""
 
@@ -82,8 +82,8 @@ class InteractionManagerThread(Thread):
 
         logger.info("Started...")
         while not self._stopped:
-            if self.should_start_interaction():
-                self.start_interaction()
+            if self._should_start_interaction():
+                self._start_interaction()
             else:
                 self._gaze_coordinator.set_gaze_state(GazeClasses.IDLE)
 

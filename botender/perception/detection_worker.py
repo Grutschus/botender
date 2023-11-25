@@ -51,10 +51,10 @@ class DetectionWorker(Process):
 
     def run(self):
         """Uses the detectors to detect faces and emotions in the newest frames."""
-        
+
         logging_utils.configure_publisher(self._logging_queue)
         logger.debug("Successfully spawned detection worker. Initializing detector...")
-        facial_expression_detector = FacialExpressionDetector(device=get_device())
+        facial_expression_detector = FacialExpressionDetector(device=_get_device())
         # emotion_detector = EmotionDetector()
         logger.debug("Successfully initialized detector. Starting work loop...")
 
@@ -98,7 +98,7 @@ class DetectionWorker(Process):
             self._result_list_lock.release()
 
 
-def get_device():
+def _get_device():
     """Get the device to use for detection."""
 
     if torch.backends.cudnn.is_available():

@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import time
 from multiprocessing import Process, Queue
 
 import cv2  # type: ignore
@@ -112,7 +113,13 @@ if __name__ == "__main__":
     run = True
     try:
         while run:
+            start_time = time.monotonic()
             render()
+            end_time = time.monotonic()
+
+            # Limit FPS
+            time.sleep(max(0, 1 / MAX_FPS - (end_time - start_time)))
+
             if (key := cv2.waitKey(1) & 0xFF) == ord("q"):
                 run = False
             elif key == ord("f"):

@@ -50,6 +50,8 @@ class DetectionWorker(Process):
         self._result_list_lock = result_list_lock
 
     def run(self):
+        """Uses the detectors to detect faces and emotions in the newest frames."""
+        
         logging_utils.configure_publisher(self._logging_queue)
         logger.debug("Successfully spawned detection worker. Initializing detector...")
         facial_expression_detector = FacialExpressionDetector(device=get_device())
@@ -62,10 +64,13 @@ class DetectionWorker(Process):
             # Get work
             self._frame_list_lock.acquire()
             if len(self._frame_list) == 0:
+                # No frame is available
                 self._frame_list_lock.release()
                 time.sleep(0.01)
                 continue
+            # Get the newest frame
             work_frame = self._frame_list.pop()
+            # Drop all older frames
             if len(self._frame_list) > 0:
                 logger.warning(
                     f"Can't keep up! Dropping {len(self._frame_list)} frames."
@@ -84,8 +89,10 @@ class DetectionWorker(Process):
             # TODO: extract features
             # TODO: predict emotion
 
+            # Create result
             result = DetectionResult(faces=faces)
 
+            # Add result
             self._result_list_lock.acquire()
             self._result_list.append(result)
             self._result_list_lock.release()

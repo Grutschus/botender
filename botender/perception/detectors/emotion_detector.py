@@ -6,12 +6,15 @@ logger = logging.getLogger(__name__)
 
 
 class EmotionDetector:
-    _model: SVC
+    """The EmotionDetector is responsible for predict the emotion of the user."""
+
+    _model: SVC # or whatever model we use
 
     def __init__(self):
         # load model
         logger.info("Loading emotion detection model...")
 
     def detect_emotion(self, features: DataFrame) -> str:
-        # predict emotion
+        """Predicts the emotion in the given features and returns it as a string."""
+
         raise NotImplementedError

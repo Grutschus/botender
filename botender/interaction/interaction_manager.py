@@ -46,6 +46,9 @@ class InteractionManagerThread(Thread):
         self._gaze_coordinator.start()
 
     def stopThread(self):
+        """Stops the Gazecoordinator and the InteractionManagerThread. Sets furhat to
+        idle state."""
+
         logger.debug("Stopping InteractionManagerThread...")
         self._stopped = True
         self._gaze_coordinator.stopThread()
@@ -54,6 +57,7 @@ class InteractionManagerThread(Thread):
 
     def start_interaction(self):
         """Create a new InteractionCoordinator and launch the interaction."""
+
         logger.info("Starting interaction...")
         interaction_coordinator = InteractionCoordinator(
             self._perception_manager, self._webcam_processor, self._furhat
@@ -63,13 +67,19 @@ class InteractionManagerThread(Thread):
     def should_start_interaction(self) -> bool:
         """Analyzes the output of the perception manager and checks if a new face
         has been detected and present for a given time."""
+
         if self._perception_manager.face_present:
             self._face_present_frame_counter += 1
         else:
             self._face_present_frame_counter = 0
+        # A face has to be detected for at least 60 frames (2 seconds) before
+        # starting an interaction
         return self._face_present_frame_counter > 60
 
     def run(self):
+        """Starts the interaction as soon as a face is detected. Sets furhat to idle
+        state when no face is detected."""
+
         logger.info("Started...")
         while not self._stopped:
             if self.should_start_interaction():

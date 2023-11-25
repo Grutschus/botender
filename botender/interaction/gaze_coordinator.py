@@ -48,10 +48,15 @@ class GazeCoordinatorThread(Thread):
         self._webcam_processor = webcam_processor
 
     def stopThread(self):
+        """Stops the GazeCoordinatorThread."""
+
         logger.debug("Stopping GazeCoordinatorThread...")
         self._stopped = True
 
     def run(self):
+        """Runs the GazeCoordinatorThread. Renders the gaze state to the screen
+        such that Furhat follows his interaction partner."""
+
         while not self._stopped:
             # Render the gaze state to the screen
             self._webcam_processor.update_debug_info("Gaze State", self._state)
@@ -59,6 +64,7 @@ class GazeCoordinatorThread(Thread):
 
     def set_gaze_state(self, state: GazeClasses):
         """Sets the gaze state of the robot."""
+
         if self._state != state:
             self._state = state
             logger.info(f"Setting gaze state to {state}")

@@ -12,6 +12,8 @@ LOGGING_PROCESS: Process | None = None
 
 class LogFilter(Filter):
     def filter(self, record):
+        """Filter out useless pyfeat logs."""
+
         if record.module == "detector":
             return record.funcName != "detect_faces" or record.levelno > logging.INFO
         return True

@@ -32,5 +32,7 @@ class InteractionCoordinator:
     def coordinate_interaction(self):
         """Coordinates the basic interaction between furhat and the user. This includes
         starting the gaze coordination thread."""
+
         logger.info("Starting to coordinate an interaction.")
         time.sleep(50)
+        # TODO: implement coordinate_interaction

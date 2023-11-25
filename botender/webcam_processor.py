@@ -18,13 +18,17 @@ FrameModifier = Callable[[np.ndarray], np.ndarray]
 
 
 class WebcamProcessor:
-    current_frame: np.ndarray
-    camera: cv2.VideoCapture
-    window_name: str
-    modifier_lock: threading.Lock
-    modifier_dict: dict[ModifierKeyType, FrameModifier]
-    FRAME_WIDTH: int = 640
-    FRAME_HEIGHT: int = 480
+    """Class for capturing the webcam footage and rendering information to the screen."""
+
+    _current_frame: np.ndarray
+    _camera: cv2.VideoCapture
+    _window_name: str
+    _modifier_lock: threading.Lock
+    _modifier_dict: dict[ModifierKeyType, FrameModifier]
+    _debug_info: dict[str, str]
+    debug_flags: dict[str, bool] = {"debug_info": False, "face_rectangles": False}
+    _FRAME_WIDTH: int = 640
+    _FRAME_HEIGHT: int = 480
 
     def __init__(
         self,
@@ -33,53 +37,70 @@ class WebcamProcessor:
         frame_height: int = 480,
     ):
         """Initialize the ImageProcessor class."""
-        self.FRAME_WIDTH = frame_width
-        self.FRAME_HEIGHT = frame_height
 
-        self.camera = cv2.VideoCapture(0)
-        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.FRAME_WIDTH)
-        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.FRAME_HEIGHT)
+        self._FRAME_WIDTH = frame_width
+        self._FRAME_HEIGHT = frame_height
+
+        self._camera = cv2.VideoCapture(0)
+        self._camera.set(cv2.CAP_PROP_FRAME_WIDTH, self._FRAME_WIDTH)
+        self._camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self._FRAME_HEIGHT)
 
         # initialize the current frame to black
-        self.current_frame = np.zeros(
-            (self.FRAME_WIDTH, self.FRAME_HEIGHT, 3), np.uint8
+        self._current_frame = np.zeros(
+            (self._FRAME_WIDTH, self._FRAME_HEIGHT, 3), np.uint8
         )
 
         # initialize the modifier lock
-        self.modifier_lock = threading.Lock()
-        self.modifier_dict = {}
+        self._modifier_lock = threading.Lock()
+        self._modifier_dict = {}
 
-        self.window_name = window_name
-        cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(self.window_name, self.FRAME_WIDTH, self.FRAME_HEIGHT)
+        # initialize the debug info
+        self._debug_info = {}
+
+        self._window_name = window_name
+        cv2.namedWindow(self._window_name, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(self._window_name, self._FRAME_WIDTH, self._FRAME_HEIGHT)
 
     def shutdown(self):
         """Deinitialize the ImageProcessor class."""
+
         logger.debug("Deinitializing WebcamProcessor...")
-        self.camera.release()
+        self._camera.release()
         cv2.destroyAllWindows()
 
     def capture(self) -> None:
         """Capture a frame from the webcam."""
-        ret, current_frame = self.camera.read()
+
+        ret, current_frame = self._camera.read()
         if not ret:
             logger.warning("Failed to capture frame from webcam.")
             return
-        self.current_frame = current_frame
+        self._current_frame = current_frame
 
     def render(self) -> None:
         """Render the frame to the screen."""
-        render_frame = self.current_frame.copy()
-        self.modifier_lock.acquire()
-        for modifier_func in self.modifier_dict.values():
+
+        render_frame = self._current_frame.copy()
+        self._modifier_lock.acquire()
+
+        # Remove all modifiers that are disabled
+        filtered_modifier_dict = {
+            key: func
+            for key, func in self._modifier_dict.items()
+            if self.debug_flags.get(str(key), True)
+        }
+
+        for modifier_func in filtered_modifier_dict.values():
             render_frame = modifier_func(render_frame)
-        self.modifier_lock.release()
+        self._modifier_lock.release()
 
-        cv2.imshow(self.window_name, render_frame)
+        cv2.imshow(self._window_name, render_frame)
 
-    def get_current_frame(self) -> np.ndarray:
+    @property
+    def current_frame(self) -> np.ndarray:
         """Return the current frame."""
-        return self.current_frame
+
+        return self._current_frame
 
     def add_frame_modifier(
         self,
@@ -88,29 +109,27 @@ class WebcamProcessor:
     ) -> ModifierKeyType | int:
         """Add a frame modifier function.
         Pass a partial function that takes a frame as input and returns a frame as output."""
+
         # TODO validate the modifier_func
 
         if modifier_key is None:
             modifier_key = id(modifier_func)
 
-        # Lock the modifiers list
-        self.modifier_lock.acquire()
-        self.modifier_dict[modifier_key] = modifier_func
-        self.modifier_lock.release()
+        self._modifier_dict[modifier_key] = modifier_func
 
         return modifier_key
 
     def remove_frame_modifier(self, modifier_key: ModifierKeyType | int) -> None:
         """Remove a frame modifier function."""
-        if modifier_key not in self.modifier_dict:
+
+        self._modifier_lock.acquire()
+        if modifier_key not in self._modifier_dict:
             logger.error(
                 "Failed to remove frame modifier function. Key not found in modifier_dict."
             )
             return
-        # Lock the modifiers list
-        self.modifier_lock.acquire()
-        del self.modifier_dict[modifier_key]
-        self.modifier_lock.release()
+        del self._modifier_dict[modifier_key]
+        self._modifier_lock.release()
 
     def add_text_to_current_frame(
         self,
@@ -120,6 +139,7 @@ class WebcamProcessor:
         modifier_key: ModifierKeyType | None = None,
     ) -> ModifierKeyType | int:
         """Add text to the current frame."""
+
         modifier_func = partial(
             cv2.putText,
             text=text,
@@ -139,6 +159,7 @@ class WebcamProcessor:
         modifier_key: ModifierKeyType | None = None,
     ) -> ModifierKeyType | int:
         """Add rectangle to the current frame."""
+
         modifier_func = partial(
             cv2.rectangle,
             pt1=(int(rectangle[0][0]), int(rectangle[0][1])),
@@ -169,3 +190,33 @@ class WebcamProcessor:
             return frame
 
         return self.add_frame_modifier(modifier_func, modifier_key)
+
+    def update_debug_info(self, key: str, value: str) -> None:
+        """Update the debug info."""
+
+        self._debug_info[key] = value
+        self._add_debug_info_to_current_frame()
+
+    def _add_debug_info_to_current_frame(
+        self,
+    ):
+        """Add debug info to the current frame."""
+
+        text = "\n".join(
+            [
+                f"{key}: {value}"
+                for key, value in self._debug_info.items()
+                if value is not None
+            ]
+        )
+        modifier_func = partial(
+            cv2.putText,
+            text=text,
+            org=(0, self._FRAME_HEIGHT - 10),
+            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            fontScale=0.5,
+            color=(255, 0, 0),
+            thickness=1,
+        )
+
+        self.add_frame_modifier(modifier_func, "debug_info")

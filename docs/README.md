@@ -67,7 +67,7 @@ As with any social robotics projects, potential ethical issues may arise at any 
 ## Control Flow & System Architecture
 The goal of our second meeting was to define the control flow of our dialogue with Botender and the high-level system architecture. This was required to get a common understanding of our application and define the tasks accordingly.
 
-![Meeting2](images/Meeting_2.jpg "Meeting 2")
+![Meeting2](images/Meeting_2.JPG "Meeting 2")
 
 The following diagram was the result of our brainstorming session and describes the communication between the customer, the two subsystems and the OpenAI API in the initial dialogue:
 

@@ -106,7 +106,6 @@ def start_logging_process(debug: bool, queue: Queue) -> Process:
 
 def stop_logging_process(queue: Queue, process: Process):
     """Stop logging process."""
-
     queue.put_nowait(None)
     queue.close()
     queue.join_thread()

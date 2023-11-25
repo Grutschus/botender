@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass
 from multiprocessing import Process, Queue
 from multiprocessing.managers import ListProxy
-from multiprocessing.synchronize import Lock as LockType
+from threading import Lock as LockType
 
 import torch
 

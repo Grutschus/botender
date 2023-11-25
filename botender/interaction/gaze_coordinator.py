@@ -50,7 +50,7 @@ class GazeCoordinatorThread(Thread):
     def stopThread(self):
         """Stops the GazeCoordinatorThread."""
 
-        logger.debug("Stopping GazeCoordinatorThread...")
+        logger.debug("Received stop signal. Stopping GazeCoordinatorThread...")
         self._stopped = True
 
     def run(self):

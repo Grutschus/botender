@@ -1,8 +1,8 @@
 import logging
-from multiprocessing import Lock, Manager, Queue
+from multiprocessing import Manager, Queue
 from multiprocessing.managers import ListProxy
 from multiprocessing.managers import SyncManager as ManagerType
-from multiprocessing.synchronize import Lock as LockType
+from threading import Lock as LockType
 
 from botender.perception.detection_worker import DetectionResult, DetectionWorker
 from botender.webcam_processor import WebcamProcessor
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class PerceptionManager:
-    """The PerceptionThread class is responsible for spawning and managing the
+    """The PerceptionManager class is responsible for spawning and managing the
     detection worker process and communicating results."""
 
     _stopped: bool = False
@@ -31,9 +31,9 @@ class PerceptionManager:
         # Initializing child workers
         self._mp_manager = Manager()
         self._frame_list = self._mp_manager.list()
-        self._frame_list_lock = Lock()
+        self._frame_list_lock = self._mp_manager.Lock()
         self._result_list = self._mp_manager.list()
-        self._result_list_lock = Lock()
+        self._result_list_lock = self._mp_manager.Lock()
         self._child_process = DetectionWorker(
             logging_queue,
             self._frame_list,
@@ -47,14 +47,20 @@ class PerceptionManager:
     def shutdown(self):
         """Shutdowns the PerceptionManager and terminate its child worker."""
 
-        logger.debug("Terminating child worker...")
+        logger.debug("Received stop signal. Stopping PerceptionManager...")
+
+        logger.debug("Sending stop signal to detection worker...")
+        self._frame_list_lock.acquire()
         self._frame_list[:] = [None]
-        self._child_process.join(5)
+        self._frame_list_lock.release()
+        self._child_process.join(10)
         if self._child_process.is_alive():
             logger.warning(
-                "Child worker could not be terminated gracefully. Killing..."
+                "Detection worker could not be terminated gracefully. Killing..."
             )
             self._child_process.terminate()
+        else:  # Child process terminated gracefully
+            logger.debug("Detection worker stopped.")
 
     @property
     def current_result(self) -> DetectionResult | None:

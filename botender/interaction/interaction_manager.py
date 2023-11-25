@@ -43,16 +43,19 @@ class InteractionManagerThread(Thread):
             self._furhat, self._perception_manager, self._webcam_processor
         )
 
+        logger.debug("Spawning GazeCoordinatorThread...")
         self._gaze_coordinator.start()
 
     def stopThread(self):
         """Stops the Gazecoordinator and the InteractionManagerThread. Sets furhat to
         idle state."""
 
-        logger.debug("Stopping InteractionManagerThread...")
+        logger.debug("Received stop signal. Stopping InteractionManagerThread...")
         self._stopped = True
+        logger.debug("Sending stop signal to GazeCoordinatorThread...")
         self._gaze_coordinator.stopThread()
         self._gaze_coordinator.join()
+        logger.debug("GazeCoordinatorThread stopped.")
         # TODO: set furhat to idle state
 
     def _start_interaction(self):
@@ -88,4 +91,4 @@ class InteractionManagerThread(Thread):
                 self._gaze_coordinator.set_gaze_state(GazeClasses.IDLE)
 
             # else: randomly add whistles or other idle sounds and gestures
-        logger.info("Finished.")
+        logger.info("Received stop signal. Exiting...")

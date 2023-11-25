@@ -77,16 +77,22 @@ def teardown():
     """Main teardown function."""
     logger.info("Stopping botender...")
 
+    logger.debug("Stopping interaction thread...")
     interaction_thread.stopThread()
     interaction_thread.join()
+    logger.debug("Interaction thread stopped.")
 
     global perception_manager
+    logger.debug("Stopping perception manager...")
     perception_manager.shutdown()
+    logger.debug("Perception manager stopped.")
 
     global webcam_processor
+    logger.debug("Stopping webcam processor...")
     webcam_processor.shutdown()
+    logger.debug("Webcam processor stopped.")
 
-    logger.debug("Stopping logging process...")
+    logger.debug("Cleanup done. Shutting down logging engine and exiting...")
     global LOGGING_PROCESS
     logging_utils.stop_logging_process(LOGGING_QUEUE, LOGGING_PROCESS)
 

@@ -34,5 +34,6 @@ class InteractionCoordinator:
         starting the gaze coordination thread."""
 
         logger.info("Starting to coordinate an interaction.")
-        time.sleep(50)
+        time.sleep(5)
+        logger.info("Interaction finished.")
         # TODO: implement coordinate_interaction

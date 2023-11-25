@@ -44,7 +44,7 @@ class PerceptionManager:
 
     def shutdown(self):
         """Shutdowns the PerceptionManager and terminate its child worker."""
-        
+
         logger.debug("Terminating child worker...")
         self._frame_list[:] = [None]
         self._child_process.join(1)

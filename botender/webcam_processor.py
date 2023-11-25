@@ -201,7 +201,7 @@ class WebcamProcessor:
         self,
     ):
         """Add debug info to the current frame."""
-        
+
         text = "\n".join(
             [
                 f"{key}: {value}"

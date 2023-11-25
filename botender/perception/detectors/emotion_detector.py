@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class EmotionDetector:
     """The EmotionDetector is responsible for predict the emotion of the user."""
 
-    _model: SVC # or whatever model we use
+    _model: SVC  # or whatever model we use
 
     def __init__(self):
         # load model

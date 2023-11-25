@@ -7,7 +7,7 @@ from pandas import DataFrame
 class FacialExpressionDetector:
     """The FacialExpressionDetector is responsible for detecting faces and extracting
     features from them."""
-    
+
     _detector: Detector
     _faces: list[tuple[float, float, float, float, float]]
 

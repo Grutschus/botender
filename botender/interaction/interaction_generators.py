@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class InteractionGenerator(ABC):
     """Parent class for all interaction generators."""
-    
+
     _furhat: FurhatRemoteApi
     _speech_detector: SpeechDetector
     _webcam_processor: WebcamProcessor

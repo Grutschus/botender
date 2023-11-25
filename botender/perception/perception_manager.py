@@ -1,8 +1,9 @@
 import logging
-from multiprocessing import Manager, Queue
-from multiprocessing.managers import ListProxy
-from multiprocessing.managers import SyncManager as ManagerType
-from threading import Lock as LockType
+from multiprocessing import Queue
+from multiprocessing.connection import Connection
+from queue import Full as QueueFullException
+from multiprocessing import Pipe
+
 
 from botender.perception.detection_worker import DetectionResult, DetectionWorker
 from botender.webcam_processor import WebcamProcessor
@@ -16,30 +17,24 @@ class PerceptionManager:
 
     _stopped: bool = False
     _current_result: DetectionResult | None = None
-    _mp_manager: ManagerType
-    _frame_list: ListProxy
-    _frame_list_lock: LockType
-    _result_list: ListProxy
-    _result_list_lock: LockType
     _child_process: DetectionWorker
+    _child_process_working: bool = False
     _webcam_processor: WebcamProcessor
+    _result_pipe: tuple[Connection, Connection]
+    _work_queue: Queue
 
     def __init__(self, logging_queue: Queue, webcam_processor: WebcamProcessor):
         logger.debug("Initializing PerceptionManager...")
         self._webcam_processor = webcam_processor
 
         # Initializing child workers
-        self._mp_manager = Manager()
-        self._frame_list = self._mp_manager.list()
-        self._frame_list_lock = self._mp_manager.Lock()
-        self._result_list = self._mp_manager.list()
-        self._result_list_lock = self._mp_manager.Lock()
+        # Queue cannot fill up; Pipe buffer fills up and becomes blocking
+        self._work_queue = Queue()
+        self._result_pipe = Pipe(duplex=False)
         self._child_process = DetectionWorker(
             logging_queue,
-            self._frame_list,
-            self._result_list,
-            self._frame_list_lock,
-            self._result_list_lock,
+            self._work_queue,
+            self._result_pipe[1],  # conn2 can only send
         )
         logger.debug("Spawning child worker...")
         self._child_process.start()
@@ -50,10 +45,8 @@ class PerceptionManager:
         logger.debug("Received stop signal. Stopping PerceptionManager...")
 
         logger.debug("Sending stop signal to detection worker...")
-        self._frame_list_lock.acquire()
-        self._frame_list[:] = [None]
-        self._frame_list_lock.release()
-        self._child_process.join(10)
+        self._work_queue.put(None)
+        self._child_process.join(5)
         if self._child_process.is_alive():
             logger.warning(
                 "Detection worker could not be terminated gracefully. Killing..."
@@ -83,19 +76,30 @@ class PerceptionManager:
         """Runs the PerceptionManager. Adds new work to the child worker and
         retrieves results."""
 
+        result_connection = self._result_pipe[0]
+
+        # Check if child process is ready to go
+        if not self._child_process_working:
+            if result_connection.poll():
+                _ = result_connection.recv()
+                logger.debug("Child process working. Received first result.")
+                self._child_process_working = True
+            else:
+                return
+
         # Add new work
         current_frame = self._webcam_processor.current_frame
-        self._frame_list_lock.acquire()
-        self._frame_list.append(current_frame)
-        self._frame_list_lock.release()
+        if current_frame is not None:
+            try:
+                self._work_queue.put(current_frame, block=False)
+            except QueueFullException:
+                logger.warning("Failed to add work to queue. Dropping frames...")
+        else:
+            logger.warning("No frame available, not sending work.")
 
-        # Get results
-        self._result_list_lock.acquire()
-        if len(self._result_list) > 0:
-            result: DetectionResult = self._result_list.pop()
-            self._result_list[:] = []
-            self._current_result = result  # No synchronization needed due to GIL
-        self._result_list_lock.release()
+        # Retrieve results
+        if result_connection.poll():
+            self._current_result = result_connection.recv()
 
         # Render results
         self._render_face_rectangles()

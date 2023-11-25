@@ -2,8 +2,7 @@
 
 import argparse
 import logging
-from multiprocessing import Queue, Process
-from time import sleep
+from multiprocessing import Process, Queue
 
 import cv2  # type: ignore
 
@@ -114,7 +113,6 @@ if __name__ == "__main__":
     try:
         while run:
             render()
-            sleep(1 / MAX_FPS)
             if (key := cv2.waitKey(1) & 0xFF) == ord("q"):
                 run = False
             elif key == ord("f"):

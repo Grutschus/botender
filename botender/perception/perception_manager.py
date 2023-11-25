@@ -1,6 +1,7 @@
 import logging
 import multiprocessing
 from multiprocessing import Queue
+from multiprocessing.managers import ListProxy
 
 from botender.perception.detection_worker import DetectionResult, DetectionWorker
 from botender.webcam_processor import WebcamProcessor
@@ -15,9 +16,9 @@ class PerceptionManager:
     _stopped: bool = False
     _current_result: DetectionResult | None = None
     _mp_manager: multiprocessing.Manager
-    _frame_list: multiprocessing.list
+    _frame_list: ListProxy
     _frame_list_lock: multiprocessing.Lock
-    _result_list: multiprocessing.list
+    _result_list: ListProxy
     _result_list_lock: multiprocessing.Lock
     _child_process: DetectionWorker
     _webcam_processor: WebcamProcessor

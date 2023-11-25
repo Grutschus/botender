@@ -26,7 +26,7 @@ class WebcamProcessor:
     _modifier_lock: threading.Lock
     _modifier_dict: dict[ModifierKeyType, FrameModifier]
     _debug_info: dict[str, str]
-    _debug_flags: dict[str, bool] = {"debug_info": False, "face_rectangles": False}
+    debug_flags: dict[str, bool] = {"debug_info": False, "face_rectangles": False}
     _FRAME_WIDTH: int = 640
     _FRAME_HEIGHT: int = 480
 
@@ -87,7 +87,7 @@ class WebcamProcessor:
         filtered_modifier_dict = {
             key: func
             for key, func in self._modifier_dict.items()
-            if self._debug_flags.get(str(key), True)
+            if self.debug_flags.get(str(key), True)
         }
 
         for modifier_func in filtered_modifier_dict.values():

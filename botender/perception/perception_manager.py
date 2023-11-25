@@ -48,7 +48,7 @@ class PerceptionManager:
 
         logger.debug("Terminating child worker...")
         self._frame_list[:] = [None]
-        self._child_process.join(1)
+        self._child_process.join(5)
         if self._child_process.is_alive():
             logger.warning(
                 "Child worker could not be terminated gracefully. Killing..."

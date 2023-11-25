@@ -4,15 +4,13 @@ from dataclasses import dataclass
 from multiprocessing import Process, Queue
 from multiprocessing.managers import ListProxy
 from multiprocessing.synchronize import Lock as LockType
+
 import torch
 
-
 import botender.logging_utils as logging_utils
-from botender.perception.detectors.facial_expression_detector import (
-    FacialExpressionDetector,
-)
+from botender.perception.detectors import FacialExpressionDetector
 
-# from botender.perception.detectors.emotion_detector import EmotionDetector
+# from botender.perception.detectors import EmotionDetector
 from botender.types import Rectangle
 
 logger = logging.getLogger(__name__)

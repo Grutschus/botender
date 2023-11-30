@@ -1,16 +1,13 @@
 import logging
-import time
 from dataclasses import dataclass
 from multiprocessing import Process, Queue
-from multiprocessing.managers import ListProxy
-from threading import Lock as LockType
+from multiprocessing.connection import Connection
+from queue import Empty as QueueEmptyException
 
 import torch
 
 import botender.logging_utils as logging_utils
 from botender.perception.detectors import FacialExpressionDetector
-
-# from botender.perception.detectors import EmotionDetector
 from botender.types import Rectangle
 
 logger = logging.getLogger(__name__)
@@ -26,26 +23,20 @@ class DetectionWorker(Process):
     """A worker process that detects faces and emotions in frames."""
 
     _logging_queue: Queue
-    _frame_list: ListProxy
-    _result_list: ListProxy
-    _frame_list_lock: LockType
-    _result_list_lock: LockType
+    _work_queue: Queue
+    _result_connection: Connection
 
     def __init__(
         self,
         logging_queue: Queue,
-        frame_list: ListProxy,
-        result_list: ListProxy,
-        frame_list_lock: LockType,
-        result_list_lock: LockType,
+        work_queue: Queue,
+        result_connection: Connection,
     ):
         super().__init__()
         logger.debug("Initializing detection worker...")
         self._logging_queue = logging_queue
-        self._frame_list = frame_list
-        self._result_list = result_list
-        self._frame_list_lock = frame_list_lock
-        self._result_list_lock = result_list_lock
+        self._work_queue = work_queue
+        self._result_connection = result_connection
 
     def run(self):
         """Uses the detectors to detect faces and emotions in the newest frames."""
@@ -55,26 +46,25 @@ class DetectionWorker(Process):
         facial_expression_detector = FacialExpressionDetector(device=_get_device())
         # emotion_detector = EmotionDetector()
         logger.debug("Successfully initialized detector. Starting work loop...")
+        self._result_connection.send(True)  # Signal that we are ready
 
-        # Fresh start
-        self._frame_list[:] = []
         while True:
-            # Get work
-            self._frame_list_lock.acquire()
-            if len(self._frame_list) == 0:
-                # No frame is available
-                self._frame_list_lock.release()
-                time.sleep(0.01)
-                continue
-            # Get the newest frame
-            work_frame = self._frame_list.pop()
-            # Drop all older frames
-            if len(self._frame_list) > 0:
-                logger.warning(
-                    f"Can't keep up! Dropping {len(self._frame_list)} frames."
-                )
-                self._frame_list[:] = []
-            self._frame_list_lock.release()
+            # Wait for work
+            work_frame = self._work_queue.get()
+
+            # Empty the work queue
+            try:
+                frames_received = 1
+                while True:
+                    work_frame = self._work_queue.get(timeout=0.01)
+                    if work_frame is None:  # Stop signal
+                        break
+                    frames_received += 1
+            except QueueEmptyException:
+                if frames_received > 1:
+                    logger.debug(
+                        f"Can't keep up! Dropped {frames_received - 1} frames."
+                    )
 
             # React to stop signal
             if work_frame is None:
@@ -90,10 +80,8 @@ class DetectionWorker(Process):
             # Create result
             result = DetectionResult(faces=faces)
 
-            # Add result
-            self._result_list_lock.acquire()
-            self._result_list.append(result)
-            self._result_list_lock.release()
+            # Send the result
+            self._result_connection.send(result)
 
 
 def _get_device():

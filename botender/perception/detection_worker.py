@@ -8,7 +8,7 @@ import torch
 
 import botender.logging_utils as logging_utils
 from botender.perception.detectors import FacialExpressionDetector
-from botender.types import Rectangle
+from botender.webcam_processor import Rectangle
 
 logger = logging.getLogger(__name__)
 

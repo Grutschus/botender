@@ -8,13 +8,15 @@ from typing import Callable
 import cv2  # type: ignore
 import numpy as np
 
-from botender.types import Rectangle
-
-
 logger = logging.getLogger(__name__)
 
 ModifierKeyType = int | str
 FrameModifier = Callable[[np.ndarray], np.ndarray]
+
+Point = tuple[float, float]
+"""Point is a tuple of two integers, x and y."""
+Rectangle = tuple[Point, Point]
+"""Rectangle is a tuple of two points, the lower left corner and the upper right corner."""
 
 
 class WebcamProcessor:

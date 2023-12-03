@@ -6,6 +6,7 @@ import time
 from multiprocessing import Process, Queue
 
 import cv2  # type: ignore
+from dotenv import load_dotenv
 
 import botender.logging_utils as logging_utils
 from botender.interaction.interaction_manager import InteractionManagerThread
@@ -46,6 +47,9 @@ def parse_args():
 
 def setup(debug: bool = False, furhat_remote_address: str = "localhost"):
     """Main setup function."""
+    # Load environment variables
+    load_dotenv()
+
     # Logging
     global LOGGING_PROCESS
     LOGGING_PROCESS = logging_utils.start_logging_process(debug, LOGGING_QUEUE)

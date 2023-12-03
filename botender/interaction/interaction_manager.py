@@ -26,6 +26,7 @@ class InteractionManagerThread(Thread):
     _perception_manager: PerceptionManager
     _webcam_processor: WebcamProcessor
     _gaze_coordinator: GazeCoordinatorThread
+    _current_interaction: InteractionCoordinator | None = None
     _furhat: FurhatRemoteAPI
     _face_present_frame_counter: int = 0
 
@@ -38,13 +39,28 @@ class InteractionManagerThread(Thread):
         super(InteractionManagerThread, self).__init__()
         self._perception_manager = perception_manager
         self._webcam_processor = webcam_processor
-        self._furhat = FurhatRemoteAPI(furhat_remote_address)
+        self._furhat = self._init_furhat(furhat_remote_address)
         self._gaze_coordinator = GazeCoordinatorThread(
             self._furhat, self._perception_manager, self._webcam_processor
         )
 
         logger.debug("Spawning GazeCoordinatorThread...")
         self._gaze_coordinator.start()
+
+    def _init_furhat(self, furhat_remote_address: str) -> FurhatRemoteAPI:
+        """Initializes the FurhatRemoteAPI object."""
+
+        logger.debug("Initializing FurhatRemoteAPI...")
+        furhat = FurhatRemoteAPI(furhat_remote_address)
+        FACE = "Patricia"
+        MASK = "Adult"
+        VOICE = "BellaNeural"
+        furhat.set_led(red=100, green=0, blue=0)
+        furhat.set_face(character=FACE, mask=MASK)
+        furhat.set_voice(VOICE)
+        furhat.set_led(red=0, green=100, blue=0)
+        logger.debug("FurhatRemoteAPI initialized.")
+        return furhat
 
     def stopThread(self):
         """Stops the Gazecoordinator and the InteractionManagerThread. Sets furhat to
@@ -62,10 +78,9 @@ class InteractionManagerThread(Thread):
         """Create a new InteractionCoordinator and launch the interaction."""
 
         logger.info("Starting interaction...")
-        interaction_coordinator = InteractionCoordinator(
+        self._current_interaction = InteractionCoordinator(
             self._perception_manager, self._webcam_processor, self._furhat
         )
-        interaction_coordinator.coordinate_interaction()
 
     def _should_start_interaction(self) -> bool:
         """Analyzes the output of the perception manager and checks if a new face
@@ -85,10 +100,13 @@ class InteractionManagerThread(Thread):
 
         logger.info("Started...")
         while not self._stopped:
-            if self._should_start_interaction():
-                self._start_interaction()
+            if self._current_interaction is not None:
+                self._current_interaction = self._current_interaction.interact()
             else:
-                self._gaze_coordinator.set_gaze_state(GazeClasses.IDLE)
+                if self._should_start_interaction():
+                    self._start_interaction()
+                else:
+                    self._gaze_coordinator.set_gaze_state(GazeClasses.IDLE)
 
             # else: randomly add whistles or other idle sounds and gestures
         logger.info("Received stop signal. Exiting...")

@@ -1,16 +1,16 @@
 import logging
+import random
 from enum import Enum
 from threading import Thread
-import time
-import random
 
-from furhat_remote_api import FurhatRemoteAPI # type: ignore
+from furhat_remote_api import FurhatRemoteAPI  # type: ignore
 
 from botender.perception.perception_manager import PerceptionManager
-from botender.webcam_processor import WebcamProcessor
-from botender.webcam_processor import Rectangle
+from botender.webcam_processor import Rectangle, WebcamProcessor
 
 logger = logging.getLogger(__name__)
+
+GAZE_COEFFICIENT = 1.0
 
 
 class GazeClasses(Enum):
@@ -40,7 +40,7 @@ class GazeCoordinatorThread(Thread):
     _state: GazeClasses = GazeClasses.NONE
 
     # Number of cells in the grid. It has to be the square of an odd number.
-    _number_of_cells: int = 9
+    _number_of_cells: int
     _frame_width: int = 640
     _frame_height: int = 480
 
@@ -84,12 +84,11 @@ class GazeCoordinatorThread(Thread):
                 self._handle_idle()
             elif self._state == GazeClasses.FACE:
                 self._handle_attend_face()
-    
 
     def _init_grid(self):
         """Initializes the grid and adds it to the gui."""
 
-        number_of_cells_per_row = int(self._number_of_cells ** 0.5)
+        number_of_cells_per_row = int(self._number_of_cells**0.5)
 
         # Calculate the size of a cell
         cell_width = self._frame_width / number_of_cells_per_row
@@ -106,8 +105,10 @@ class GazeCoordinatorThread(Thread):
                     )
                 )
 
-        self._webcam_processor.add_rectangles_to_current_frame(self._grid, color=(0, 0, 255), modifier_key="grid")
-        
+        self._webcam_processor.add_rectangles_to_current_frame(
+            self._grid, color=(0, 0, 255), modifier_key="grid"
+        )
+
     def _handle_none(self):
         """Handles the none gaze command."""
 
@@ -120,19 +121,19 @@ class GazeCoordinatorThread(Thread):
     def _handle_idle(self):
         """Handles the idle gaze command."""
 
-       # Get the values of the last idle location
+        # Get the values of the last idle location
         x, y, z = self._last_idle_location.split(",")
-        
+
         # Add random noise to the location
         x = float(x) + random.uniform(-0.01, 0.01)
         y = float(y) + random.uniform(-0.01, 0.01)
         z = 0.5
 
-        location = "{},{},{}".format(x, y, z)
+        location = f"{x},{y},{z}"
 
         # Call the attend function of the furhat remote api
         self._furhat.attend(location=location)
-    
+
     def _handle_attend_face(self):
         """Handles the attend_face gaze command."""
 
@@ -153,10 +154,18 @@ class GazeCoordinatorThread(Thread):
 
         # Calculates the location that furhat should look at
         frame_center = (self._frame_width / 2, self._frame_height / 2)
-        x = (frame_center[0] - cell_center[0])/(self._frame_width / 2)
-        y = (frame_center[1] - cell_center[0])/(self._frame_height / 2)
-        z = 0.5
-        location = "{},{},{}".format(x, y, z)
+        x = (
+            (frame_center[0] - cell_center[0])
+            / (self._frame_width / 2)
+            * GAZE_COEFFICIENT
+        )
+        y = (
+            (frame_center[1] - cell_center[1])
+            / (self._frame_height / 2)
+            * GAZE_COEFFICIENT
+        )
+        z = 2.0
+        location = f"{x},{y},{z}"
 
         # Call the attend function of the furhat remote api if the face is in a different cell than the last face
         if cell != self._last_face_cell:
@@ -164,10 +173,9 @@ class GazeCoordinatorThread(Thread):
             self._last_face_cell = cell
             logger.info(f"Attending face in cell {cell}.")
 
-
     def _get_cell_of_face(self, face: Rectangle) -> int:
         """Returns the cell index of the given face.
-            If the face is not in the grid, -1 is returned."""
+        If the face is not in the grid, -1 is returned."""
 
         # Calculate the center of the face
         face_center = (

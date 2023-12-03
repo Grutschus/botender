@@ -21,7 +21,7 @@ LOGGING_PROCESS: Process | None = None
 SCREEN_WIDTH: int = 640
 SCREEN_HEIGHT: int = 480
 MAX_FPS: int = 30
-NUMBER_OF_CELLS: int = 9
+NUMBER_OF_CELLS: int = 49
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,12 @@ def setup(debug: bool = False, furhat_remote_address: str = "localhost"):
     # Interaction
     global interaction_thread
     interaction_thread = InteractionManagerThread(
-        perception_manager, webcam_processor, furhat_remote_address, SCREEN_WIDTH, SCREEN_HEIGHT, NUMBER_OF_CELLS
+        perception_manager,
+        webcam_processor,
+        furhat_remote_address,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT,
+        NUMBER_OF_CELLS,
     )
     interaction_thread.start()
 
@@ -130,9 +135,9 @@ if __name__ == "__main__":
                 ] = not webcam_processor.debug_flags["face_rectangles"]
             elif key == ord("g"):
                 logger.info("Toggling rendering of the grid...")
-                webcam_processor.debug_flags[
+                webcam_processor.debug_flags["grid"] = not webcam_processor.debug_flags[
                     "grid"
-                ] = not webcam_processor.debug_flags["grid"]
+                ]
             elif key == ord("d"):
                 logger.info("Toggling debug screen...")
                 webcam_processor.debug_flags[

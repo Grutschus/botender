@@ -3,11 +3,13 @@ from dataclasses import dataclass
 from multiprocessing import Process, Queue
 from multiprocessing.connection import Connection
 from queue import Empty as QueueEmptyException
+from pandas import DataFrame
 
 import torch
 
 import botender.logging_utils as logging_utils
 from botender.perception.detectors import FacialExpressionDetector
+from botender.perception.detectors import EmotionDetector
 from botender.webcam_processor import Rectangle
 
 logger = logging.getLogger(__name__)
@@ -17,6 +19,10 @@ logger = logging.getLogger(__name__)
 class DetectionResult:
     faces: list[Rectangle]
     """A list of rectangles representing the faces detected in the frame."""
+    features: DataFrame()
+    """A dataframe containing all the features extracted from the frame."""
+    emotions: list[str]
+    """A list of strings containing all detected emotions from the frame."""
 
 
 class DetectionWorker(Process):
@@ -44,7 +50,7 @@ class DetectionWorker(Process):
         logging_utils.configure_publisher(self._logging_queue)
         logger.debug("Successfully spawned detection worker. Initializing detector...")
         facial_expression_detector = FacialExpressionDetector(device=_get_device())
-        # emotion_detector = EmotionDetector()
+        emotion_detector = EmotionDetector()
         logger.debug("Successfully initialized detector. Starting work loop...")
         self._result_connection.send(True)  # Signal that we are ready
 
@@ -75,10 +81,14 @@ class DetectionWorker(Process):
             faces = facial_expression_detector.detect_faces(work_frame)
 
             # TODO: extract features
+            features = facial_expression_detector.extract_features(work_frame)
             # TODO: predict emotion
+            emotions = emotion_detector.detect_emotion(features=features)
 
             # Create result
-            result = DetectionResult(faces=faces)
+            result = DetectionResult(
+                faces=faces, features=features, emotions=[emotions]
+            )
 
             # Send the result
             self._result_connection.send(result)

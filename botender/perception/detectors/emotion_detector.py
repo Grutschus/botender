@@ -27,6 +27,7 @@ class EmotionDetector:
 
     def detect_emotion(self, features: DataFrame) -> str:
         """Predicts the emotion in the given features and returns it as a string."""
+        
         scaled_aus = self.loaded_scaler.transform(features[0])
         predictions = self.loaded_model.predict(scaled_aus)
         predicted_emotions = self.loaded_label_encoder.inverse_transform(predictions)

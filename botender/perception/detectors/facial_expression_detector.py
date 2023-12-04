@@ -25,6 +25,7 @@ class FacialExpressionDetector:
     def extract_features(self, frame) -> DataFrame:
         """Extracts features from the faces detected in the last frame and returns them
         as a DataFrame."""
+        
         landmarks = self._detector.detect_landmarks(frame,[self._faces])
         aus = self._detector.detect_aus(frame, landmarks)
 

@@ -21,7 +21,7 @@ class DetectionResult:
     """A list of rectangles representing the faces detected in the frame."""
     features: DataFrame()
     """A dataframe containing all the features extracted from the frame."""
-    emotions: list[str]
+    emotions: str
     """A list of strings containing all detected emotions from the frame."""
 
 
@@ -79,10 +79,9 @@ class DetectionWorker(Process):
 
             # Do the work
             faces = facial_expression_detector.detect_faces(work_frame)
-
-            # TODO: extract features
+            # extract features
             features = facial_expression_detector.extract_features(work_frame)
-            # TODO: predict emotion
+            # predict emotion
             emotions = emotion_detector.detect_emotion(features=features)
 
             # Create result

@@ -21,7 +21,7 @@ LOGGING_PROCESS: Process | None = None
 SCREEN_WIDTH: int = 640
 SCREEN_HEIGHT: int = 480
 MAX_FPS: int = 30
-NUMBER_OF_CELLS: int = 49
+NUMBER_OF_CELLS_PER_SIDE: int = 7
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def setup(debug: bool = False, furhat_remote_address: str = "localhost"):
         furhat_remote_address,
         SCREEN_WIDTH,
         SCREEN_HEIGHT,
-        NUMBER_OF_CELLS,
+        NUMBER_OF_CELLS_PER_SIDE,
     )
     interaction_thread.start()
 

@@ -10,7 +10,13 @@ from botender.webcam_processor import Rectangle, WebcamProcessor
 
 logger = logging.getLogger(__name__)
 
-GAZE_COEFFICIENT = 1.0
+GAZE_SCALE_COEFFICIENT = 0.3
+GAZE_HEIGTH_COEFFICIENT = 0.1
+
+# The gaze z value is calculated as follows:
+# gaze_z = GAZE_Z_MAX - (GAZE_Z_DECREASE * (face_width / frame_width))
+GAZE_Z_MAX = 0.52
+GAZE_Z_DECREASE = 1.08
 
 
 class GazeClasses(Enum):
@@ -39,8 +45,8 @@ class GazeCoordinatorThread(Thread):
     _stopped: bool = False
     _state: GazeClasses = GazeClasses.NONE
 
-    # Number of cells in the grid. It has to be the square of an odd number.
-    _number_of_cells: int
+    # Number of cells per row and column in the grid. It has to be an odd number.
+    _number_of_cells_per_side: int
     _frame_width: int = 640
     _frame_height: int = 480
 
@@ -55,7 +61,7 @@ class GazeCoordinatorThread(Thread):
         webcam_processor: WebcamProcessor,
         frame_width: int = 640,
         frame_height: int = 480,
-        number_of_cells: int = 9,
+        number_of_cells_per_side: int = 9,
     ):
         super(GazeCoordinatorThread, self).__init__()
         self._furhat = furhat
@@ -63,7 +69,7 @@ class GazeCoordinatorThread(Thread):
         self._webcam_processor = webcam_processor
         self._frame_width = frame_width
         self._frame_height = frame_height
-        self._number_of_cells = number_of_cells
+        self._number_of_cells_per_side = number_of_cells_per_side
         self._init_grid()
 
     def stopThread(self):
@@ -88,16 +94,14 @@ class GazeCoordinatorThread(Thread):
     def _init_grid(self):
         """Initializes the grid and adds it to the gui."""
 
-        number_of_cells_per_row = int(self._number_of_cells**0.5)
-
         # Calculate the size of a cell
-        cell_width = self._frame_width / number_of_cells_per_row
-        cell_height = self._frame_height / number_of_cells_per_row
+        cell_width = self._frame_width / self._number_of_cells_per_side
+        cell_height = self._frame_height / self._number_of_cells_per_side
 
         # Initialize the grid
         self._grid = []
-        for i in range(number_of_cells_per_row):
-            for j in range(number_of_cells_per_row):
+        for i in range(self._number_of_cells_per_side):
+            for j in range(self._number_of_cells_per_side):
                 self._grid.append(
                     (
                         (i * cell_width, j * cell_height),
@@ -143,6 +147,9 @@ class GazeCoordinatorThread(Thread):
         except IndexError:
             return
 
+        # Log width and height of face
+        self._webcam_processor.update_debug_info(f"width: {face[1][0] - face[0][0]}, height: {face[1][1] - face[0][1]}", "face size")
+
         # Get the cell of the face
         cell = self._get_cell_of_face(face)
 
@@ -157,21 +164,20 @@ class GazeCoordinatorThread(Thread):
         x = (
             (frame_center[0] - cell_center[0])
             / (self._frame_width / 2)
-            * GAZE_COEFFICIENT
+            * GAZE_SCALE_COEFFICIENT
         )
         y = (
-            (frame_center[1] - cell_center[1])
+            (frame_center[1] - cell_center[1] + GAZE_HEIGTH_COEFFICIENT)
             / (self._frame_height / 2)
-            * GAZE_COEFFICIENT
+            * GAZE_SCALE_COEFFICIENT
         )
-        z = 2.0
+        z = GAZE_Z_MAX - (GAZE_Z_DECREASE * ((face[1][0] - face[0][0]) / self._frame_width))
         location = f"{x},{y},{z}"
 
         # Call the attend function of the furhat remote api if the face is in a different cell than the last face
         if cell != self._last_face_cell:
             self._furhat.attend(location=location)
             self._last_face_cell = cell
-            logger.info(f"Attending face in cell {cell}.")
 
     def _get_cell_of_face(self, face: Rectangle) -> int:
         """Returns the cell index of the given face.

@@ -15,8 +15,8 @@ GAZE_HEIGTH_COEFFICIENT = 0.1
 
 # The gaze z value is calculated as follows:
 # gaze_z = GAZE_Z_MAX - (GAZE_Z_DECREASE * (face_width / frame_width))
-GAZE_Z_MAX = 0.52
-GAZE_Z_DECREASE = 1.08
+GAZE_Z_MAX = 1.59
+GAZE_Z_DECREASE = 16/3
 
 
 class GazeClasses(Enum):

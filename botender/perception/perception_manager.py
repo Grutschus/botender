@@ -121,7 +121,12 @@ class PerceptionManager:
             return
 
         try:
-            pt1 = self._current_result.faces[0][0]
+            # pt1 = (x coord of bottom right corner, y coord of top left corner)
+            # this is because the image is mirrored
+            pt1 = (
+                self._current_result.faces[0][1][0],
+                self._current_result.faces[0][0][1],
+            )
         except IndexError:
             return
 

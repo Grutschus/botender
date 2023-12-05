@@ -28,7 +28,11 @@ class WebcamProcessor:
     _modifier_lock: threading.Lock
     _modifier_dict: dict[ModifierKeyType, FrameModifier]
     _debug_info: dict[str, str]
-    debug_flags: dict[str, bool] = {"debug_info": False, "face_rectangles": False, "grid": False}
+    debug_flags: dict[str, bool] = {
+        "debug_info": False,
+        "face_rectangles": False,
+        "grid": False,
+    }
     _FRAME_WIDTH: int = 640
     _FRAME_HEIGHT: int = 480
 

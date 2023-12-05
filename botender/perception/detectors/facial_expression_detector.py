@@ -10,6 +10,7 @@ class FacialExpressionDetector:
 
     _detector: Detector
     _faces: list[tuple[float, float, float, float, float]]
+    _features: DataFrame
 
     def __init__(self, device: str = "cpu"):
         self._detector = Detector(device=device)
@@ -21,8 +22,11 @@ class FacialExpressionDetector:
         self._faces = self._detector.detect_faces(frame)[0]
         return [((x1, y1), (x2, y2)) for x1, y1, x2, y2, _ in self._faces]
 
-    def extract_features(self) -> DataFrame:
+    def extract_features(self, frame) -> DataFrame:
         """Extracts features from the faces detected in the last frame and returns them
         as a DataFrame."""
 
-        raise NotImplementedError
+        landmarks = self._detector.detect_landmarks(frame, [self._faces])
+        aus = self._detector.detect_aus(frame, landmarks)
+
+        return aus

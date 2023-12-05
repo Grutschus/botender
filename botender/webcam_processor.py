@@ -32,6 +32,7 @@ class WebcamProcessor:
         "debug_info": False,
         "face_rectangles": False,
         "grid": False,
+        "emotion": False,
     }
     _FRAME_WIDTH: int = 640
     _FRAME_HEIGHT: int = 480

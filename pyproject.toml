@@ -80,6 +80,7 @@ imageio = { extras = ["ffmpeg"], version = "^2.33" }
 numpy = "^1.26"
 py-feat = "^0.6"
 colorlog = "^6.7"
+types-setuptools = "^69.0.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^2.15"

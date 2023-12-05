@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class DetectionResult:
     faces: list[Rectangle]
     """A list of rectangles representing the faces detected in the frame."""
-    features: DataFrame()
+    features: DataFrame
     """A dataframe containing all the features extracted from the frame."""
     emotion: str
     """A string that defines the detected emotion."""
@@ -80,7 +80,7 @@ class DetectionWorker(Process):
             # Do the work
             faces = facial_expression_detector.detect_faces(work_frame)
             # extract features
-            features = facial_expression_detector.extract_features(work_frame)
+            features = facial_expression_detector.extract_features(work_frame, faces)
             # predict emotion
             emotion = emotion_detector.detect_emotion(features=features)
 

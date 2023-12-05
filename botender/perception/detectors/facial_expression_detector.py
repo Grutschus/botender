@@ -10,7 +10,7 @@ class FacialExpressionDetector:
 
     _detector: Detector
     _faces: list[tuple[float, float, float, float, float]]
-    _features: DataFrame()
+    _features: DataFrame
 
     def __init__(self, device: str = "cpu"):
         self._detector = Detector(device=device)

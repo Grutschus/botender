@@ -225,7 +225,10 @@ class FarewellState(InteractionState):
 
     def handle(self):
         furhat = self.context._furhat
+        furhat.gesture(name="BigSmile", blocking=False)
         furhat.say(text="Goodbye!", blocking=True)
+
+        time.sleep(10)
 
 
 class SearchState(InteractionState):

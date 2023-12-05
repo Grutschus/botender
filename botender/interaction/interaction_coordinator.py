@@ -80,7 +80,7 @@ class InteractionCoordinator:
         if not self._perception_manager.face_present and not isinstance(
             self._state, SearchState
         ):
-            timeout = 0
+            timeout = 0.0
             while not self._perception_manager.face_present:
                 logger.info("No face present.")
                 time.sleep(0.5)

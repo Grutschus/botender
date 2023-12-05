@@ -18,13 +18,13 @@ class SpeechDetector:
         """Captures speech from the user and returns it as a string."""
         try:
             # Turn on LED to indicate listening
-            self._furhat.set_led(red=200, green=50, blue=50)
+            self._furhat.set_led(red=255, green=165, blue=0)
 
             # Start listening for user speech
             speech_result = self._furhat.listen()
 
             # Turn off LED (reset to default or turn off completely)
-            self._furhat.set_led(red=0, green=0, blue=0)
+            self._furhat.set_led(red=0, green=255, blue=0)
 
             # Check if the speech was successfully captured
             if speech_result.success:

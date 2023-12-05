@@ -1,7 +1,8 @@
+import numpy as np
 from feat import Detector  # type: ignore
-from botender.webcam_processor import Rectangle
-
 from pandas import DataFrame
+
+from botender.webcam_processor import Rectangle
 
 
 class FacialExpressionDetector:
@@ -22,11 +23,14 @@ class FacialExpressionDetector:
         self._faces = self._detector.detect_faces(frame)[0]
         return [((x1, y1), (x2, y2)) for x1, y1, x2, y2, _ in self._faces]
 
-    def extract_features(self, frame) -> DataFrame:
+    def extract_features(self, frame: np.ndarray) -> DataFrame:
         """Extracts features from the faces detected in the last frame and returns them
         as a DataFrame."""
+        faces = self._faces
+        if len(faces) == 0:
+            return DataFrame()
 
-        landmarks = self._detector.detect_landmarks(frame, [self._faces])
+        landmarks = self._detector.detect_landmarks(frame, [faces])
         aus = self._detector.detect_aus(frame, landmarks)
 
         return aus

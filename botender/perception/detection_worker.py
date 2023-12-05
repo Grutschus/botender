@@ -1,17 +1,18 @@
 import logging
+import warnings
 from dataclasses import dataclass
 from multiprocessing import Process, Queue
 from multiprocessing.connection import Connection
 from queue import Empty as QueueEmptyException
-from pandas import DataFrame
 
 import torch
+from pandas import DataFrame
 
 import botender.logging_utils as logging_utils
-from botender.perception.detectors import FacialExpressionDetector
-from botender.perception.detectors import EmotionDetector
+from botender.perception.detectors import EmotionDetector, FacialExpressionDetector
 from botender.webcam_processor import Rectangle
 
+warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 
 
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 class DetectionResult:
     faces: list[Rectangle]
     """A list of rectangles representing the faces detected in the frame."""
-    features: DataFrame()
+    features: DataFrame
     """A dataframe containing all the features extracted from the frame."""
     emotion: str
     """A string that defines the detected emotion."""

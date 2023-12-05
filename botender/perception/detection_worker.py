@@ -1,17 +1,18 @@
 import logging
+import warnings
 from dataclasses import dataclass
 from multiprocessing import Process, Queue
 from multiprocessing.connection import Connection
 from queue import Empty as QueueEmptyException
-from pandas import DataFrame
 
 import torch
+from pandas import DataFrame
 
 import botender.logging_utils as logging_utils
-from botender.perception.detectors import FacialExpressionDetector
-from botender.perception.detectors import EmotionDetector
+from botender.perception.detectors import EmotionDetector, FacialExpressionDetector
 from botender.webcam_processor import Rectangle
 
+warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 
 
@@ -80,7 +81,7 @@ class DetectionWorker(Process):
             # Do the work
             faces = facial_expression_detector.detect_faces(work_frame)
             # extract features
-            features = facial_expression_detector.extract_features(work_frame, faces)
+            features = facial_expression_detector.extract_features(work_frame)
             # predict emotion
             emotion = emotion_detector.detect_emotion(features=features)
 

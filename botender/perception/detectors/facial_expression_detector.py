@@ -23,9 +23,10 @@ class FacialExpressionDetector:
         self._faces = self._detector.detect_faces(frame)[0]
         return [((x1, y1), (x2, y2)) for x1, y1, x2, y2, _ in self._faces]
 
-    def extract_features(self, frame: np.ndarray, faces: list[Rectangle]) -> DataFrame:
+    def extract_features(self, frame: np.ndarray) -> DataFrame:
         """Extracts features from the faces detected in the last frame and returns them
         as a DataFrame."""
+        faces = self._faces
         if len(faces) == 0:
             return DataFrame()
 

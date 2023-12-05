@@ -13,6 +13,8 @@ from botender.interaction.gaze_coordinator import GazeCoordinatorThread, GazeCla
 from botender.perception.detectors.speech_detector import SpeechDetector
 from botender.perception.perception_manager import PerceptionManager
 from botender.webcam_processor import WebcamProcessor
+from botender.interaction import gestures
+from botender.interaction.gestures import GestureType
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +133,7 @@ class GreetingState(InteractionState):
         self.context.set_gaze(GazeClasses.FACE)
 
         # Greet the user
+        furhat.gesture(name="Smile", blocking=False)
         greeting = self.GREETINGS[np.random.randint(0, len(self.GREETINGS))]
 
         # TODO Add gestures
@@ -185,10 +188,15 @@ class IntroductionState(InteractionState):
 
             name = response.choices[0].message.content
             if name == "Error":
+                furhat.gesture(
+                    body=gestures.get_random_gesture(GestureType.UNDERSTAND_ISSUE),
+                    blocking=False,
+                )
                 furhat.say(text="I'm sorry, I didn't quite get that.", blocking=True)
                 return
             self.context.user_info["name"] = name
 
+        furhat.gesture(name="Smile", blocking=False)
         furhat.say(
             text=f"Nice to meet you {self.context.user_info['name']}.", blocking=True
         )
@@ -199,6 +207,16 @@ class AcknowledgeEmotionState(InteractionState):
     """State to handle aknowledging the user's emotion"""
 
     def handle(self):
+        furhat = self.context._furhat
+
+        emotion = self.context._perception_manager.current_result.emotion
+        if emotion == "happy":
+            furhat.gesture(name="Smile", blocking=False)
+        elif emotion == "sad":
+            furhat.gesture(name="ExpressSad", blocking=False)
+        elif emotion == "angry":
+            furhat.gesture(name="ExpressFear", blocking=False)
+        furhat.say(text=f"You seem {emotion}.", blocking=True)
         self.context.transition_to(FarewellState())
 
 

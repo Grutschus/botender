@@ -34,13 +34,21 @@ class InteractionManagerThread(Thread):
         perception_manager: PerceptionManager,
         webcam_processor: WebcamProcessor,
         furhat_remote_address: str,
+        frame_width: int = 640,
+        frame_height: int = 480,
+        number_of_cells_per_side: int = 7,
     ):
         super(InteractionManagerThread, self).__init__()
         self._perception_manager = perception_manager
         self._webcam_processor = webcam_processor
         self._furhat = FurhatRemoteAPI(furhat_remote_address)
         self._gaze_coordinator = GazeCoordinatorThread(
-            self._furhat, self._perception_manager, self._webcam_processor
+            self._furhat,
+            self._perception_manager,
+            self._webcam_processor,
+            frame_width,
+            frame_height,
+            number_of_cells_per_side,
         )
 
         logger.debug("Spawning GazeCoordinatorThread...")

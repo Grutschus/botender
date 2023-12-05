@@ -4328,6 +4328,17 @@ files = [
 ]
 
 [[package]]
+name = "types-setuptools"
+version = "69.0.0.0"
+description = "Typing stubs for setuptools"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "types-setuptools-69.0.0.0.tar.gz", hash = "sha256:b0a06219f628c6527b2f8ce770a4f47550e00d3e8c3ad83e2dc31bc6e6eda95d"},
+    {file = "types_setuptools-69.0.0.0-py3-none-any.whl", hash = "sha256:8c86195bae2ad81e6dea900a570fe9d64a59dbce2b11cc63c046b03246ea77bf"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.8.0"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -4493,4 +4504,4 @@ scikit-learn = ["scikit-learn"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "f5bfa4c879838095a6123dd6d47b29bf4724e4a020ec7002d76fcfaab4b977fb"
+content-hash = "bee66b594cc9fdfde1b51e165e5dcf25776dd657d1630c13e254f04a9df3e5f5"

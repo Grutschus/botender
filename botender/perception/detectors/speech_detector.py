@@ -4,7 +4,6 @@ import re
 
 logger = logging.getLogger(__name__)
 
-
 class SpeechDetector:
     """The SpeechDetector is responsible for capturing speech from the user.
     It runs in the same thread as the InteractionManager."""

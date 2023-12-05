@@ -10,8 +10,8 @@ from botender.webcam_processor import Rectangle, WebcamProcessor
 
 logger = logging.getLogger(__name__)
 
-GAZE_SCALE_COEFFICIENT = 0.3
-GAZE_HEIGTH_COEFFICIENT = 0.1
+GAZE_SCALE_COEFFICIENT = 0.2
+GAZE_HEIGHT_COEFFICIENT = 0.05
 
 # The gaze z value is calculated as follows:
 # gaze_z = GAZE_Z_MAX - (GAZE_Z_DECREASE * (face_width / frame_width))
@@ -148,7 +148,7 @@ class GazeCoordinatorThread(Thread):
             return
 
         # Log width and height of face
-        self._webcam_processor.update_debug_info(f"width: {face[1][0] - face[0][0]}, height: {face[1][1] - face[0][1]}", "face size")
+        self._webcam_processor.update_debug_info("face size", f"width: {face[1][0] - face[0][0]}, height: {face[1][1] - face[0][1]}")
 
         # Get the cell of the face
         cell = self._get_cell_of_face(face)
@@ -167,8 +167,8 @@ class GazeCoordinatorThread(Thread):
             * GAZE_SCALE_COEFFICIENT
         )
         y = (
-            (frame_center[1] - cell_center[1] + GAZE_HEIGTH_COEFFICIENT)
-            / (self._frame_height / 2)
+            ((frame_center[1] - cell_center[1])
+            / (self._frame_height / 2) + GAZE_HEIGHT_COEFFICIENT)
             * GAZE_SCALE_COEFFICIENT
         )
         z = GAZE_Z_MAX - (GAZE_Z_DECREASE * ((face[1][0] - face[0][0]) / self._frame_width))

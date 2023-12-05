@@ -83,6 +83,9 @@ class WebcamProcessor:
         """Render the frame to the screen."""
 
         render_frame = self._current_frame.copy()
+
+        cv2.flip(render_frame, 1, render_frame)
+
         self._modifier_lock.acquire()
 
         # Remove all modifiers that are disabled
@@ -145,7 +148,7 @@ class WebcamProcessor:
         modifier_func = partial(
             cv2.putText,
             text=text,
-            org=origin,
+            org=self._flip_point_horizontally(origin),
             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
             fontScale=1,
             color=color,
@@ -164,8 +167,8 @@ class WebcamProcessor:
 
         modifier_func = partial(
             cv2.rectangle,
-            pt1=(int(rectangle[0][0]), int(rectangle[0][1])),
-            pt2=(int(rectangle[1][0]), int(rectangle[1][1])),
+            pt1=self._flip_point_horizontally(rectangle[0]),
+            pt2=self._flip_point_horizontally(rectangle[1]),
             color=color,
             thickness=2,
         )
@@ -184,8 +187,8 @@ class WebcamProcessor:
             for rectangle in rectangles:
                 frame = cv2.rectangle(
                     frame,
-                    pt1=(int(rectangle[0][0]), int(rectangle[0][1])),
-                    pt2=(int(rectangle[1][0]), int(rectangle[1][1])),
+                    pt1=self._flip_point_horizontally(rectangle[0]),
+                    pt2=self._flip_point_horizontally(rectangle[1]),
                     color=color,
                     thickness=2,
                 )
@@ -222,3 +225,8 @@ class WebcamProcessor:
         )
 
         self.add_frame_modifier(modifier_func, "debug_info")
+
+    def _flip_point_horizontally(self, point: Point) -> Point:
+        """Flip a point horizontally."""
+
+        return (int(self._FRAME_WIDTH - point[0]), int(point[1]))

@@ -13,8 +13,8 @@ class SpeechDetector:
     def __init__(self, furhat: FurhatRemoteAPI):
         self._furhat = furhat
 
-    def capture_speech(self):
-        """Captures speech from the user and returns it as an array of strings."""
+    def capture_speech(self) -> str:
+        """Captures speech from the user and returns it as a string."""
         try:
             # Turn on LED to indicate listening
             self._furhat.set_led(red=200, green=50, blue=50)
@@ -31,19 +31,16 @@ class SpeechDetector:
                 captured_speech = speech_result.message
                 
                 # Log the captured speech
-                logger.info(f"Speech captured: {captured_speech}")
+                logger.info(f'Speech captured: "{captured_speech}"')
                 
-                # Extract all words as an array of strings
-                array_of_strings = re.findall(r'\b\w+\b', captured_speech)
-                
-                return array_of_strings
+                return captured_speech
             else:
                 # Handle the unsuccessful capture
                 logger.error("Speech capture unsuccessful.")
-                return []
+                return ""
 
         except Exception as e:
             # Log the exception with stack trace
             logger.exception(f"Error in capture_speech: {e}")
-            return []
+            return ""
         

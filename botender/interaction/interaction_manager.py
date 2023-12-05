@@ -87,7 +87,10 @@ class InteractionManagerThread(Thread):
 
         logger.info("Starting interaction...")
         self._current_interaction = InteractionCoordinator(
-            self._perception_manager, self._webcam_processor, self._furhat
+            self._perception_manager,
+            self._webcam_processor,
+            self._gaze_coordinator,
+            self._furhat,
         )
 
     def _should_start_interaction(self) -> bool:

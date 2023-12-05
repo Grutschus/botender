@@ -9,6 +9,7 @@ import numpy as np
 from furhat_remote_api import FurhatRemoteAPI  # type: ignore
 from openai import OpenAI
 
+from botender.interaction.gaze_coordinator import GazeCoordinatorThread, GazeClasses
 from botender.perception.detectors.speech_detector import SpeechDetector
 from botender.perception.perception_manager import PerceptionManager
 from botender.webcam_processor import WebcamProcessor
@@ -26,6 +27,7 @@ class InteractionCoordinator:
     _perception_manager: PerceptionManager
     _webcam_processor: WebcamProcessor
     _speech_detector: SpeechDetector
+    _gaze_coordinator: GazeCoordinatorThread
     _furhat: FurhatRemoteAPI
     _state: InteractionState
     _previous_state: InteractionState | None
@@ -35,6 +37,7 @@ class InteractionCoordinator:
         self,
         perception_manager: PerceptionManager,
         webcam_processor: WebcamProcessor,
+        gaze_coordinator: GazeCoordinatorThread,
         furhat: FurhatRemoteAPI,
     ):
         self._perception_manager = (
@@ -42,8 +45,9 @@ class InteractionCoordinator:
         )
         self._webcam_processor = webcam_processor  # Used to interact with GUI
         self._furhat = furhat  # Used to interact with Furhat
+        self._gaze_coordinator = gaze_coordinator
         self._speech_detector = SpeechDetector(self._furhat)
-        self._state = None
+        self._state = None  # type: ignore[assignment]
         self.transition_to(GreetingState())  # Initial state
         self.user_info = {}
 
@@ -60,14 +64,15 @@ class InteractionCoordinator:
 
     def listen(self) -> str:
         """Listens to the user and returns the text."""
-        # TODO Remove try catch
-        try:
-            return self._speech_detector.capture_speech()
-        except NotImplementedError:
-            return self._furhat.listen().message
+        return self._speech_detector.capture_speech()
 
-    def interact(self) -> InteractionCoordinator:
-        """Runs one interaction cycle and returns the updated InteractionCoordinator."""
+    def set_gaze(self, gaze_class: GazeClasses) -> None:
+        """Sets the gaze to follow the user."""
+        self._gaze_coordinator.set_gaze_state(gaze_class)
+
+    def interact(self) -> InteractionCoordinator | None:
+        """Runs one interaction cycle and returns the updated InteractionCoordinator or
+        None if the interaction is finished."""
 
         self.handle()
 
@@ -121,6 +126,9 @@ class GreetingState(InteractionState):
 
     def handle(self):
         furhat = self.context._furhat
+
+        # Set the gaze to follow the user
+        self.context.set_gaze(GazeClasses.FACE)
 
         # Greet the user
         greeting = self.GREETINGS[np.random.randint(0, len(self.GREETINGS))]

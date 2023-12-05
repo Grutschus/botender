@@ -103,6 +103,7 @@ class PerceptionManager:
 
         # Render results
         self._render_face_rectangles()
+        self._render_emotion()
 
     def _render_face_rectangles(self) -> None:
         """Renders face rectangles to the current frame."""
@@ -111,4 +112,20 @@ class PerceptionManager:
             return
         self._webcam_processor.add_rectangles_to_current_frame(
             self._current_result.faces, modifier_key="face_rectangles"
+        )
+
+    def _render_emotion(self) -> None:
+        """Renders the emotion to the current frame."""
+
+        if self._current_result is None:
+            return
+        
+        try:
+            pt1 = self._current_result.faces[0][0]
+        except IndexError:
+            return
+        
+        origin = (int(pt1[0]), int(pt1[1] - 10))
+        self._webcam_processor.add_text_to_current_frame(
+            self._current_result.emotion, origin=origin, modifier_key="emotion"
         )

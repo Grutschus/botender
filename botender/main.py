@@ -129,10 +129,13 @@ if __name__ == "__main__":
             if (key := cv2.waitKey(1) & 0xFF) == ord("q"):
                 run = False
             elif key == ord("f"):
-                logger.info("Toggling rendering of face boxes...")
+                logger.info("Toggling rendering of face boxes and emotion...")
                 webcam_processor.debug_flags[
                     "face_rectangles"
                 ] = not webcam_processor.debug_flags["face_rectangles"]
+                webcam_processor.debug_flags[
+                    "emotion"
+                ] = not webcam_processor.debug_flags["emotion"]
             elif key == ord("g"):
                 logger.info("Toggling rendering of the grid...")
                 webcam_processor.debug_flags["grid"] = not webcam_processor.debug_flags[

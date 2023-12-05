@@ -85,9 +85,7 @@ class DetectionWorker(Process):
             emotion = emotion_detector.detect_emotion(features=features)
 
             # Create result
-            result = DetectionResult(
-                faces=faces, features=features, emotions=[emotions]
-            )
+            result = DetectionResult(faces=faces, features=features, emotion=emotion)
 
             # Send the result
             self._result_connection.send(result)

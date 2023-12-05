@@ -119,12 +119,12 @@ class PerceptionManager:
 
         if self._current_result is None:
             return
-        
+
         try:
             pt1 = self._current_result.faces[0][0]
         except IndexError:
             return
-        
+
         origin = (int(pt1[0]), int(pt1[1] - 10))
         self._webcam_processor.add_text_to_current_frame(
             self._current_result.emotion, origin=origin, modifier_key="emotion"

@@ -15,8 +15,8 @@ GAZE_HEIGHT_COEFFICIENT = 0.05
 
 # The gaze z value is calculated as follows:
 # gaze_z = GAZE_Z_MAX - (GAZE_Z_DECREASE * (face_width / frame_width))
-GAZE_Z_MAX = 1.59
-GAZE_Z_DECREASE = 16/3
+GAZE_Z_MAX = 4
+GAZE_Z_DECREASE = 12.63
 
 
 class GazeClasses(Enum):
@@ -61,7 +61,7 @@ class GazeCoordinatorThread(Thread):
         webcam_processor: WebcamProcessor,
         frame_width: int = 640,
         frame_height: int = 480,
-        number_of_cells_per_side: int = 9,
+        number_of_cells_per_side: int = 7,
     ):
         super(GazeCoordinatorThread, self).__init__()
         self._furhat = furhat
@@ -148,7 +148,7 @@ class GazeCoordinatorThread(Thread):
             return
 
         # Log width and height of face
-        self._webcam_processor.update_debug_info("face size", f"width: {face[1][0] - face[0][0]}, height: {face[1][1] - face[0][1]}")
+        self._webcam_processor.update_debug_info("face width", f"{face[1][0] - face[0][0]}")
 
         # Get the cell of the face
         cell = self._get_cell_of_face(face)
@@ -173,6 +173,7 @@ class GazeCoordinatorThread(Thread):
         )
         z = GAZE_Z_MAX - (GAZE_Z_DECREASE * ((face[1][0] - face[0][0]) / self._frame_width))
         location = f"{x},{y},{z}"
+        self._webcam_processor.update_debug_info("Gaze Location", location)
 
         # Call the attend function of the furhat remote api if the face is in a different cell than the last face
         if cell != self._last_face_cell:
@@ -205,4 +206,4 @@ class GazeCoordinatorThread(Thread):
         if self._state != state:
             self._state = state
             logger.info(f"Setting gaze state to {state}")
-            self._webcam_processor.update_debug_info("Gaze State", self._state)
+            #self._webcam_processor.update_debug_info("Gaze State", self._state)

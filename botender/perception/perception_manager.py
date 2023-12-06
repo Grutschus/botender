@@ -1,9 +1,9 @@
 import logging
-from multiprocessing import Queue
+import multiprocessing as mp
+from multiprocessing import Pipe, Queue
 from multiprocessing.connection import Connection
-from queue import Full as QueueFullException
-from multiprocessing import Pipe
 
+import numpy as np
 
 from botender.perception.detection_worker import DetectionResult, DetectionWorker
 from botender.webcam_processor import WebcamProcessor
@@ -21,7 +21,7 @@ class PerceptionManager:
     _child_process_working: bool = False
     _webcam_processor: WebcamProcessor
     _result_pipe: tuple[Connection, Connection]
-    _work_queue: Queue
+    _drop_counter: int = 0
 
     def __init__(self, logging_queue: Queue, webcam_processor: WebcamProcessor):
         logger.debug("Initializing PerceptionManager...")
@@ -29,12 +29,19 @@ class PerceptionManager:
 
         # Initializing child workers
         # Queue cannot fill up; Pipe buffer fills up and becomes blocking
-        self._work_queue = Queue()
+        self.frame_shape = webcam_processor.current_frame.shape
+        c_type = np.ctypeslib.as_ctypes_type(self._webcam_processor.current_frame.dtype)
+        self._shared_array = mp.Array(c_type, int(np.prod(self.frame_shape)))
+        self._stop_event = mp.Event()
+        self._detect_emotion_event = mp.Event()
         self._result_pipe = Pipe(duplex=False)
         self._child_process = DetectionWorker(
             logging_queue,
-            self._work_queue,
+            self.frame_shape,
+            self._shared_array,
             self._result_pipe[1],  # conn2 can only send
+            self._stop_event,
+            self._detect_emotion_event,
         )
         logger.debug("Spawning child worker...")
         self._child_process.start()
@@ -45,7 +52,7 @@ class PerceptionManager:
         logger.debug("Received stop signal. Stopping PerceptionManager...")
 
         logger.debug("Sending stop signal to detection worker...")
-        self._work_queue.put(None)
+        self._stop_event.set()
         self._child_process.join(5)
         if self._child_process.is_alive():
             logger.warning(
@@ -72,6 +79,11 @@ class PerceptionManager:
 
         return self._current_result is not None and len(self._current_result.faces) > 0
 
+    def detect_emotion(self) -> None:
+        """Tells the PerceptionManager to detect emotions."""
+
+        self._detect_emotion_event.set()
+
     def run(self) -> None:
         """Runs the PerceptionManager. Adds new work to the child worker and
         retrieves results."""
@@ -89,13 +101,17 @@ class PerceptionManager:
 
         # Add new work
         current_frame = self._webcam_processor.current_frame
-        if current_frame is not None:
-            try:
-                self._work_queue.put(current_frame, block=False)
-            except QueueFullException:
-                logger.warning("Failed to add work to queue. Dropping frames...")
-        else:
-            logger.warning("No frame available, not sending work.")
+        with self._shared_array.get_lock():
+            array = _to_numpy_array(self._shared_array, self.frame_shape)
+            if not np.array_equal(array, np.zeros(self.frame_shape, dtype=np.uint8)):
+                self._drop_counter += 1
+            elif self._drop_counter > 0:
+                logger.debug(
+                    f"Detection worker can't keep up! Dropped {self._drop_counter} frames."
+                )
+                self._drop_counter = 0
+
+            array[:] = current_frame.copy()
 
         # Retrieve results
         if result_connection.poll():
@@ -134,3 +150,11 @@ class PerceptionManager:
         self._webcam_processor.add_text_to_current_frame(
             self._current_result.emotion, origin=origin, modifier_key="emotion"
         )
+
+
+def _to_numpy_array(shared_array, shape: tuple[int, ...] | None = None):
+    """Converts a shared array to a numpy array."""
+    if shape is None:
+        return np.frombuffer(shared_array.get_obj(), dtype=np.uint8)
+    else:
+        return np.frombuffer(shared_array.get_obj(), dtype=np.uint8).reshape(shape)

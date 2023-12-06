@@ -68,6 +68,12 @@ class InteractionCoordinator:
         """Listens to the user and returns the text."""
         return self._speech_detector.capture_speech()
 
+    def get_emotion(self) -> str:
+        """Returns the emotion of the user."""
+        while self._perception_manager.detects_emotion():
+            time.sleep(1)
+        return self._perception_manager.current_result.emotion
+
     def set_gaze(self, gaze_class: GazeClasses) -> None:
         """Sets the gaze to follow the user."""
         self._gaze_coordinator.set_gaze_state(gaze_class)
@@ -162,6 +168,7 @@ class IntroductionState(InteractionState):
         furhat.say(text=introduction_question, blocking=True)
 
         user_response = self.context.listen()
+        self._context._perception_manager.detect_emotion()
 
         if os.getenv("ENABLE_OPENAI_API") != "True":
             self.context.user_info["name"] = "Paul"
@@ -209,7 +216,7 @@ class AcknowledgeEmotionState(InteractionState):
     def handle(self):
         furhat = self.context._furhat
 
-        emotion = self.context._perception_manager.current_result.emotion
+        emotion = self.context.get_emotion()
         if emotion == "happy":
             furhat.gesture(name="Smile", blocking=False)
         elif emotion == "sad":

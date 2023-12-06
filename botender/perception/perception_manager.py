@@ -81,8 +81,11 @@ class PerceptionManager:
 
     def detect_emotion(self) -> None:
         """Tells the PerceptionManager to detect emotions."""
-
         self._detect_emotion_event.set()
+
+    def detects_emotion(self) -> bool:
+        """Returns True if the PerceptionManager is currently detecting emotions."""
+        return self._detect_emotion_event.is_set()
 
     def run(self) -> None:
         """Runs the PerceptionManager. Adds new work to the child worker and

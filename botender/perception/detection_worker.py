@@ -15,6 +15,11 @@ from botender.webcam_processor import Rectangle
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 
+EMOTION_DETECTION_FRAME_COUNT = 60
+"""The number of frames to use for emotion detection."""
+EMOTION_DETECTION_FRAME_SKIP = 30
+"""The number of frames to skip between emotion detections."""
+
 
 @dataclass
 class DetectionResult:
@@ -32,6 +37,13 @@ class DetectionWorker(Process):
     _logging_queue: Queue
     _result_connection: Connection
     _current_result: DetectionResult
+
+    facial_expression_detector: FacialExpressionDetector
+    emotion_detector: EmotionDetector
+    work_frame: np.ndarray
+
+    _last_emotions: list[str] = []
+    _detect_emotion_counter: int = 0
 
     def __init__(
         self,
@@ -59,8 +71,8 @@ class DetectionWorker(Process):
 
         logging_utils.configure_publisher(self._logging_queue)
         logger.debug("Successfully spawned detection worker. Initializing detector...")
-        facial_expression_detector = FacialExpressionDetector(device=_get_device())
-        emotion_detector = EmotionDetector()
+        self.facial_expression_detector = FacialExpressionDetector(device=_get_device())
+        self.emotion_detector = EmotionDetector()
         logger.debug("Successfully initialized detector. Starting work loop...")
         self._result_connection.send(True)  # Signal that we are ready
 
@@ -73,27 +85,55 @@ class DetectionWorker(Process):
             # Get new frame
             with self._shared_array.get_lock():
                 _work_frame = _to_numpy_array(self._shared_array, self.frame_shape)
-                work_frame = _work_frame.copy()
+                self.work_frame = _work_frame.copy()
                 _work_frame[:] = 0
             # No new work available
-            if np.array_equal(work_frame, np.zeros(self.frame_shape, dtype=np.uint8)):
+            if np.array_equal(
+                self.work_frame, np.zeros(self.frame_shape, dtype=np.uint8)
+            ):
                 continue
 
             # Do the work
-            faces = facial_expression_detector.detect_faces(work_frame)
+            faces = self.facial_expression_detector.detect_faces(self.work_frame)
             self._current_result.faces = faces
 
+            clear_flag = False
             if self._detect_emotion_event.is_set():
-                # extract features
-                features = facial_expression_detector.extract_features(work_frame)
-                self._current_result.features = features
-                # predict emotion
-                emotion = emotion_detector.detect_emotion(features=features)
-                self._current_result.emotion = emotion
-                self._detect_emotion_event.clear()
+                clear_flag = self.detect_emotion()
 
             # Send the result
             self._result_connection.send(self._current_result)
+            if clear_flag:
+                self._detect_emotion_event.clear()
+
+    def detect_emotion(self) -> bool:
+        """Detects the emotion of the user."""
+        clear_flag = False
+
+        if self._detect_emotion_counter % EMOTION_DETECTION_FRAME_SKIP != 0:
+            self._detect_emotion_counter += 1
+            return clear_flag
+
+        # extract features
+        features = self.facial_expression_detector.extract_features(self.work_frame)
+        self._current_result.features = features
+        # predict emotion
+        emotion = self.emotion_detector.detect_emotion(features=features)
+        self._last_emotions.append(emotion)
+
+        self._detect_emotion_counter += 1
+
+        if self._detect_emotion_counter > EMOTION_DETECTION_FRAME_COUNT:
+            # update emotion by majority vote
+            self._current_result.emotion = max(
+                set(self._last_emotions), key=self._last_emotions.count
+            )
+            # reset emotion detection attributes
+            self._last_emotions = []
+            self._detect_emotion_counter = 0
+            clear_flag = True
+
+        return clear_flag
 
 
 def _get_device():

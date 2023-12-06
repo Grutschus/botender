@@ -106,7 +106,7 @@ class DetectionWorker(Process):
             if clear_flag:
                 self._detect_emotion_event.clear()
 
-    def detect_emotion(self) -> None:
+    def detect_emotion(self) -> bool:
         """Detects the emotion of the user."""
         clear_flag = False
 

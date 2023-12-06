@@ -150,6 +150,9 @@ if __name__ == "__main__":
                 webcam_processor.debug_flags[
                     "debug_info"
                 ] = not webcam_processor.debug_flags["debug_info"]
+            elif key == ord("e"):
+                logger.info("Triggering emotion detection once...")
+                perception_manager.detect_emotion()
 
     except KeyboardInterrupt:
         pass

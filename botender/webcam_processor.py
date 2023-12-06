@@ -54,7 +54,7 @@ class WebcamProcessor:
 
         # initialize the current frame to black
         self._current_frame = np.zeros(
-            (self._FRAME_WIDTH, self._FRAME_HEIGHT, 3), np.uint8
+            (self._FRAME_HEIGHT, self._FRAME_WIDTH, 3), np.uint8
         )
 
         # initialize the modifier lock

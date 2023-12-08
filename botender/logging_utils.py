@@ -1,11 +1,11 @@
 import datetime
 import logging
 import os
+from logging import Filter
 from logging.handlers import QueueHandler
-from multiprocessing import Queue, Process
+from multiprocessing import Process, Queue
 
 import colorlog
-from logging import Filter
 
 LOGGING_PROCESS: Process | None = None
 
@@ -13,10 +13,11 @@ LOGGING_PROCESS: Process | None = None
 class LogFilter(Filter):
     def filter(self, record):
         """Filter out useless pyfeat logs."""
-
+        results = True
         if record.module == "detector":
-            return record.funcName != "detect_faces" or record.levelno > logging.INFO
-        return True
+            if record.funcName == "detect_faces" and record.levelno <= logging.WARNING:
+                results = False
+        return results
 
 
 def _configure_listener(debug: bool):
@@ -98,7 +99,7 @@ def configure_publisher(queue: Queue):
 def start_logging_process(debug: bool, queue: Queue) -> Process:
     """Setup logging process."""
 
-    p = Process(target=_listener_process, args=(queue, debug))
+    p = Process(target=_listener_process, args=(queue, debug), name="LoggingProcess")
     p.start()
 
     return p

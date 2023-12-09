@@ -36,12 +36,12 @@ To find the best model and its best hyperparameters for our scenario, we perform
 
 After the training of the models, we evaluated them with the test set. The following table shows the results of the evaluation of the models and different datasets:
 
-| Dataset              | F1 score | Accuracy |
-|----------------------|----------|----------|
-| Training with PCA    | 81.63%   | 83.83%   |
-| Test without PCA     | 53.88%   | 62.74%   |
-| Training without PCA | 84.42%   | 86.38%   |
-| Test without PCA     | 53.99%   | 63.32%   |
+| Dataset                | F1 score | Accuracy |
+|------------------------|----------|----------|
+| Training with PCA      | 81.63%   | 83.83%   |
+| Test without PCA       | 53.88%   | 62.74%   |
+| Training without PCA   | 84.42%   | 86.38%   |
+| Test without PCA       | 53.99%   | 63.32%   |
 
 We can see that the models trained with or without the PCA have almost the same performance. The model trained with the PCA has a slightly lower F1 score and accuracy. The models tend to overfit the training data because they achieve a F1 score and accuracy of over 80% on the training data but only scores of around 60% on the test data.
 
@@ -71,12 +71,12 @@ We can see that the models learns to reduce the loss and the accuracy increases 
 
 The following table shows the results of the evaluation of the neural network:
 
-| Dataset              | Accuracy |
-|----------------------|----------|
-| Training with PCA    |   62%    |
-| Test without PCA     |   43%    |
-| Training without PCA |   64%    |
-| Test without PCA     |   45%    |
+| Dataset                | Accuracy |
+|------------------------|----------|
+| Training with PCA      |   62%    |
+| Test without PCA       |   43%    |
+| Training without PCA   |   64%    |
+| Test without PCA       |   45%    |
 
 We can see that the neural network has a lower accuracy than the sklearn models. The neural network also tends to overfit the training data because it achieves a higher accuracy on the training data than on the test data.
 

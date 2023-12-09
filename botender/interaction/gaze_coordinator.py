@@ -53,7 +53,6 @@ class GazeCoordinatorThread(Thread):
 
     _grid: list[Rectangle] = []
     _last_face_cell: int = -1
-    _last_idle_location: str = "0,0,0"
 
     def __init__(
         self,
@@ -135,16 +134,15 @@ class GazeCoordinatorThread(Thread):
         """Handles the attend_face gaze command."""
         if self._perception_manager.current_result is None:
             return
+
+        if self._perception_manager.face_presence_counter < 10:
+            return
+
         try:
             # Get the current face from the perception manager. Select the first face if more than one is present.
             face = self._perception_manager.current_result.faces[0]
         except IndexError:
             return
-
-        # Log width and height of face
-        self._webcam_processor.update_debug_info(
-            "face width", f"{int(face[1][0] - face[0][0])}"
-        )
 
         # Get the cell of the face
         cell = self._get_cell_of_face(face)
@@ -170,9 +168,6 @@ class GazeCoordinatorThread(Thread):
             GAZE_Z_DECREASE * ((face[1][0] - face[0][0]) / self._frame_width)
         )
         location = f"{x},{y},{z}"
-        self._webcam_processor.update_debug_info(
-            "Gaze Location", f"{x:.2f},{y:.2f},{z:.2f}"
-        )
 
         # Call the attend function of the furhat remote api if the face is in a different cell than the last face
         if cell != self._last_face_cell:

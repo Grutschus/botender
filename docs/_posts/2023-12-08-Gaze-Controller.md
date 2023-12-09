@@ -13,4 +13,5 @@ To detect the location of the customer's face we're using the output of the **Fa
 
 While testing this simple conversion, we figured out three different problems. First, the movements of the robot's head were to extreme. Therefore, we scaled the calculated x and y values by a fixed constant. Second, the webcam of the robot is located higher than the robot's eyes. This results in a different perspective of the customer's face. To compensate this, we had to adjust the calculated y value. Third, we had to find a method to calculate the distance to the customer's face. To approximate this, we measured the distance to the customer's face in two different positions and calculated a linear function that approximates the measured values.
 
-After solving these problems, the robot follows the customers face naturally.
+After solving these problems, the robot follows the customers face naturally as the following video shows:
+![Gaze Controller Gif](../images/gaze_gif.gif "Gaze Controller Example")

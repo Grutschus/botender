@@ -18,3 +18,10 @@ The *Interaction Manager* utilizes a FSM to manage the flow of interaction betwe
 The use of a FSM allows for a rule-based conversation flow with Botender. Hence, the FSM provides a predictable flow of interaction, where each state can be developed and tested independently. This enhances maintainability.
 
 The states in Botender's Interaction Manager are listed below:
+- The `Greeting State`: It initiates the interaction with a welcoming message. Botender greets the user using pre-defined phrases and gestures. After the greeting is completed, the FSM transitions to the Introduction State. 
+- The `Introduction State`: This state involves listening to the user's response and extracting the user's name using natural language processing techniques. It handles the introduction of the user to the robot. 
+- The `Acknowledge Emotion State`: This state acknowledges the user's current emotional state as determined by the User Perception subsystem. It responds with appropriate gestures and comments based on the perceived emotion. To conclude the interaction, it leads to the Farewell State.
+- The `Farewell State`: The final state which concludes the interaction. Botender bids farewell to the user with a friendly and positive gesture.
+- The `Search State`: 
+
+At any state, the system may return to the Greeting State, if the user disappears.

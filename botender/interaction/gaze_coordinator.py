@@ -1,5 +1,5 @@
 import logging
-import random
+import time
 from enum import Enum
 from threading import Thread
 
@@ -44,6 +44,7 @@ class GazeCoordinatorThread(Thread):
     _webcam_processor: WebcamProcessor
     _stopped: bool = False
     _state: GazeClasses = GazeClasses.NONE
+    _run_loop_speed: float = 0.5  #  0.5 means 2 loops per second
 
     # Number of cells per row and column in the grid. It has to be an odd number.
     _number_of_cells_per_side: int
@@ -52,7 +53,6 @@ class GazeCoordinatorThread(Thread):
 
     _grid: list[Rectangle] = []
     _last_face_cell: int = -1
-    _last_idle_location: str = "0,0,0"
 
     def __init__(
         self,
@@ -63,7 +63,7 @@ class GazeCoordinatorThread(Thread):
         frame_height: int = 480,
         number_of_cells_per_side: int = 7,
     ):
-        super(GazeCoordinatorThread, self).__init__()
+        super(GazeCoordinatorThread, self).__init__(name="GazeCoordinatorThread")
         self._furhat = furhat
         self._perception_manager = perception_manager
         self._webcam_processor = webcam_processor
@@ -83,6 +83,7 @@ class GazeCoordinatorThread(Thread):
         such that Furhat follows his interaction partner."""
 
         while not self._stopped:
+            start_time = time.monotonic()
             # Render the gaze state to the screen
             if self._state == GazeClasses.NONE:
                 self._handle_none()
@@ -90,6 +91,9 @@ class GazeCoordinatorThread(Thread):
                 self._handle_idle()
             elif self._state == GazeClasses.FACE:
                 self._handle_attend_face()
+                continue
+            end_time = time.monotonic()
+            time.sleep(max(0, self._run_loop_speed - (end_time - start_time)))
 
     def _init_grid(self):
         """Initializes the grid and adds it to the gui."""
@@ -124,33 +128,21 @@ class GazeCoordinatorThread(Thread):
 
     def _handle_idle(self):
         """Handles the idle gaze command."""
-
-        # Get the values of the last idle location
-        x, y, z = self._last_idle_location.split(",")
-
-        # Add random noise to the location
-        x = float(x) + random.uniform(-0.01, 0.01)
-        y = float(y) + random.uniform(-0.01, 0.01)
-        z = 0.5
-
-        location = f"{x},{y},{z}"
-
-        # Call the attend function of the furhat remote api
-        self._furhat.attend(location=location)
+        self._furhat.attend(location="0,0,1")
 
     def _handle_attend_face(self):
         """Handles the attend_face gaze command."""
+        if self._perception_manager.current_result is None:
+            return
+
+        if self._perception_manager.face_presence_counter < 10:
+            return
 
         try:
             # Get the current face from the perception manager. Select the first face if more than one is present.
             face = self._perception_manager.current_result.faces[0]
         except IndexError:
             return
-
-        # Log width and height of face
-        self._webcam_processor.update_debug_info(
-            "face width", f"{int(face[1][0] - face[0][0])}"
-        )
 
         # Get the cell of the face
         cell = self._get_cell_of_face(face)
@@ -176,9 +168,6 @@ class GazeCoordinatorThread(Thread):
             GAZE_Z_DECREASE * ((face[1][0] - face[0][0]) / self._frame_width)
         )
         location = f"{x},{y},{z}"
-        self._webcam_processor.update_debug_info(
-            "Gaze Location", f"{x:.2f},{y:.2f},{z:.2f}"
-        )
 
         # Call the attend function of the furhat remote api if the face is in a different cell than the last face
         if cell != self._last_face_cell:

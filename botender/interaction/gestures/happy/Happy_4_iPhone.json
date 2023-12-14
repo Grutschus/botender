@@ -1,0 +1,218 @@
+{
+  "class": "furhatos.gestures.Gesture",
+  "_comment": "frameLength = 50  timePadding = 500 articulationMod = 1.0 speedMod = 1.0  file = Happy_4_iPhone",
+  "defaultPriority": 0,
+  "name": "Happy_4_iPhone",
+  "frames": [
+    {
+      "time": [
+        0.5
+      ],
+      "params": {
+        "EYE_BLINK_LEFT": 0.21,
+        "EYE_BLINK_RIGHT": 0.21,
+        "EYE_LOOK_DOWN_LEFT": 0.34,
+        "EYE_LOOK_DOWN_RIGHT": 0.34,
+        "MOUTH_SMILE_RIGHT": 0.71,
+        "CHEEK_SQUINT_RIGHT": 0.36,
+        "NECK_ROLL": 1.0,
+        "NECK_TILT": -7.1
+      }
+    },
+    {
+      "time": [
+        0.567
+      ],
+      "params": {
+        "EYE_LOOK_DOWN_LEFT": 0.37,
+        "EYE_LOOK_DOWN_RIGHT": 0.37,
+        "BROW_DOWN_LEFT": 0.22,
+        "BROW_DOWN_RIGHT": 0.22,
+        "MOUTH_PRESS_RIGHT": 0.1,
+        "MOUTH_SHRUG_UPPER": 0.25,
+        "MOUTH_SHRUG_LOWER": 0.31,
+        "MOUTH_UPPER_UP_LEFT": 0.09,
+        "CHEEK_SQUINT_LEFT": 0.35,
+        "CHEEK_SQUINT_RIGHT": 0.41,
+        "NECK_ROLL": -0.2,
+        "NECK_PAN": -3.3,
+        "NECK_TILT": -7.8
+      }
+    },
+    {
+      "time": [
+        0.634
+      ],
+      "params": {
+        "MOUTH_SMILE_LEFT": 0.71,
+        "MOUTH_PRESS_LEFT": 0.11,
+        "MOUTH_SHRUG_UPPER": 0.29,
+        "CHEEK_SQUINT_LEFT": 0.38,
+        "CHEEK_SQUINT_RIGHT": 0.41,
+        "NECK_ROLL": -3.7,
+        "NECK_TILT": -8.9
+      }
+    },
+    {
+      "time": [
+        0.7
+      ],
+      "params": {
+        "EYE_BLINK_LEFT": 0.25,
+        "EYE_BLINK_RIGHT": 0.25,
+        "EYE_LOOK_DOWN_LEFT": 0.41,
+        "EYE_LOOK_DOWN_RIGHT": 0.41,
+        "CHEEK_SQUINT_LEFT": 0.44,
+        "CHEEK_SQUINT_RIGHT": 0.46,
+        "NECK_ROLL": -9.1,
+        "NECK_TILT": -9.6
+      }
+    },
+    {
+      "time": [
+        0.767
+      ],
+      "params": {
+        "EYE_BLINK_LEFT": 0.28,
+        "EYE_BLINK_RIGHT": 0.28,
+        "MOUTH_SMILE_RIGHT": 0.75,
+        "NECK_ROLL": -14.7,
+        "NECK_TILT": -11.0
+      }
+    },
+    {
+      "time": [
+        0.834
+      ],
+      "params": {
+        "BROW_DOWN_LEFT": 0.26,
+        "BROW_DOWN_RIGHT": 0.26,
+        "MOUTH_SMILE_LEFT": 0.74,
+        "CHEEK_SQUINT_LEFT": 0.48,
+        "CHEEK_SQUINT_RIGHT": 0.49,
+        "NECK_ROLL": -19.7
+      }
+    },
+    {
+      "time": [
+        0.9
+      ],
+      "params": {
+        "MOUTH_ROLL_LOWER": 0.09,
+        "CHEEK_SQUINT_LEFT": 0.5,
+        "CHEEK_SQUINT_RIGHT": 0.51,
+        "NECK_ROLL": -24.5
+      }
+    },
+    {
+      "time": [
+        0.967
+      ],
+      "params": {
+        "MOUTH_SMILE_LEFT": 0.78,
+        "MOUTH_SMILE_RIGHT": 0.79,
+        "MOUTH_SHRUG_LOWER": 0.35,
+        "CHEEK_SQUINT_LEFT": 0.53,
+        "CHEEK_SQUINT_RIGHT": 0.54,
+        "NECK_ROLL": -28.5
+      }
+    },
+    {
+      "time": [
+        1.034
+      ],
+      "params": {
+        "MOUTH_SMILE_RIGHT": 0.82,
+        "MOUTH_SHRUG_UPPER": 0.31,
+        "MOUTH_UPPER_UP_LEFT": 0.13,
+        "MOUTH_UPPER_UP_RIGHT": 0.14,
+        "NECK_ROLL": -30.8,
+        "NECK_TILT": -10.0
+      }
+    },
+    {
+      "time": [
+        1.101
+      ],
+      "params": {
+        "MOUTH_SMILE_LEFT": 0.82,
+        "CHEEK_SQUINT_LEFT": 0.56,
+        "CHEEK_SQUINT_RIGHT": 0.57
+      }
+    },
+    {
+      "time": [
+        1.167
+      ],
+      "params": {
+        "BROW_DOWN_LEFT": 0.29,
+        "BROW_DOWN_RIGHT": 0.29,
+        "MOUTH_PRESS_RIGHT": 0.14,
+        "MOUTH_SHRUG_UPPER": 0.35
+      }
+    },
+    {
+      "time": [
+        1.301
+      ],
+      "params": {
+        "EYE_SQUINT_LEFT": 0.13,
+        "EYE_SQUINT_RIGHT": 0.13,
+        "CHEEK_SQUINT_RIGHT": 0.61
+      }
+    },
+    {
+      "time": [
+        1.367
+      ],
+      "params": {
+        "EYE_BLINK_LEFT": 0.32,
+        "EYE_BLINK_RIGHT": 0.32,
+        "BROW_DOWN_LEFT": 0.32,
+        "BROW_DOWN_RIGHT": 0.32
+      }
+    },
+    {
+      "time": [
+        1.568
+      ],
+      "params": {
+        "EYE_BLINK_LEFT": 0.35,
+        "EYE_BLINK_RIGHT": 0.35,
+        "NECK_ROLL": -29.8
+      }
+    },
+    {
+      "time": [
+        1.834
+      ],
+      "params": {
+        "NECK_ROLL": -29.1
+      }
+    },
+    {
+      "time": [
+        1.968
+      ],
+      "params": {
+        "NECK_PAN": -4.2
+      }
+    },
+    {
+      "time": [
+        2.034
+      ],
+      "params": {
+        "NECK_ROLL": -28.1
+      }
+    },
+    {
+      "time": [
+        2.901
+      ],
+      "params": {
+        "reset": true
+      }
+    }
+  ]
+}

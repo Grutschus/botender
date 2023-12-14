@@ -1,10 +1,12 @@
 import logging
+import time
 from threading import Thread
 
+import numpy as np
 from furhat_remote_api import FurhatRemoteAPI  # type: ignore
 
-from botender.interaction.gaze_coordinator import GazeCoordinatorThread
-from botender.interaction.gaze_coordinator import GazeClasses
+from botender.interaction.gaze_coordinator import GazeClasses, GazeCoordinatorThread
+from botender.interaction.gestures import get_random_gesture
 from botender.interaction.interaction_coordinator import InteractionCoordinator
 from botender.perception.perception_manager import PerceptionManager
 from botender.webcam_processor import WebcamProcessor
@@ -29,6 +31,7 @@ class InteractionManagerThread(Thread):
     _current_interaction: InteractionCoordinator | None = None
     _furhat: FurhatRemoteAPI
     _face_present_frame_counter: int = 0
+    _run_loop_speed: float = 1.0  #  1.0 means 1 loop per second
 
     def __init__(
         self,
@@ -39,7 +42,7 @@ class InteractionManagerThread(Thread):
         frame_height: int = 480,
         number_of_cells_per_side: int = 7,
     ):
-        super(InteractionManagerThread, self).__init__()
+        super(InteractionManagerThread, self).__init__(name="InteractionManagerThread")
         self._perception_manager = perception_manager
         self._webcam_processor = webcam_processor
         self._furhat = self._init_furhat(furhat_remote_address)
@@ -94,16 +97,9 @@ class InteractionManagerThread(Thread):
         )
 
     def _should_start_interaction(self) -> bool:
-        """Analyzes the output of the perception manager and checks if a new face
-        has been detected and present for a given time."""
+        """Starts an interactino if a face is present for 150 consecutive frames."""
 
-        if self._perception_manager.face_present:
-            self._face_present_frame_counter += 1
-        else:
-            self._face_present_frame_counter = 0
-        # A face has to be detected for at least 60 frames (2 seconds) before
-        # starting an interaction
-        return self._face_present_frame_counter > 60
+        return self._perception_manager.face_presence_counter > 150
 
     def run(self):
         """Starts the interaction as soon as a face is detected. Sets furhat to idle
@@ -111,6 +107,8 @@ class InteractionManagerThread(Thread):
 
         logger.info("Started...")
         while not self._stopped:
+            start_time = time.monotonic()
+
             if self._current_interaction is not None:
                 self._current_interaction = self._current_interaction.interact()
             else:
@@ -118,6 +116,13 @@ class InteractionManagerThread(Thread):
                     self._start_interaction()
                 else:
                     self._gaze_coordinator.set_gaze_state(GazeClasses.IDLE)
+                    # Trigger an idle gesture with a specific probability
+                    # ~ 30 FPS -> 1 idle gesture every 5 seconds -> p = 1/150
+                    if np.random.choice(690) <= 69:
+                        gesture = get_random_gesture("idle")
+                        self._furhat.gesture(body=gesture, blocking=False)
 
+            end_time = time.monotonic()
+            time.sleep(max(0, self._run_loop_speed - (end_time - start_time)))
             # else: randomly add whistles or other idle sounds and gestures
         logger.info("Received stop signal. Exiting...")

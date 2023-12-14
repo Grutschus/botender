@@ -22,6 +22,7 @@ class PerceptionManager:
     _webcam_processor: WebcamProcessor
     _result_pipe: tuple[Connection, Connection]
     _drop_counter: int = 0
+    _face_presence_counter: int = 0
 
     def __init__(self, logging_queue: Queue, webcam_processor: WebcamProcessor):
         logger.debug("Initializing PerceptionManager...")
@@ -79,6 +80,12 @@ class PerceptionManager:
 
         return self._current_result is not None and len(self._current_result.faces) > 0
 
+    @property
+    def face_presence_counter(self) -> int:
+        """Returns the number of consecutive frames in which a face was present."""
+
+        return self._face_presence_counter
+
     def detect_emotion(self) -> None:
         """Tells the PerceptionManager to detect emotions."""
         self._detect_emotion_event.set()
@@ -108,17 +115,22 @@ class PerceptionManager:
             array = _to_numpy_array(self._shared_array, self.frame_shape)
             if not np.array_equal(array, np.zeros(self.frame_shape, dtype=np.uint8)):
                 self._drop_counter += 1
-            elif self._drop_counter > 0:
+            else:
+                self._drop_counter = 0
+            if self._drop_counter > 10:
                 logger.debug(
                     f"Detection worker can't keep up! Dropped {self._drop_counter} frames."
                 )
-                self._drop_counter = 0
 
             array[:] = current_frame.copy()
 
         # Retrieve results
         if result_connection.poll():
             self._current_result = result_connection.recv()
+            if self.face_present:
+                self._face_presence_counter += 1
+            else:
+                self._face_presence_counter = 0
 
         # Render results
         self._render_face_rectangles()

@@ -14,12 +14,14 @@ from botender.interaction.gaze_coordinator import GazeClasses, GazeCoordinatorTh
 from botender.perception.detectors.speech_detector import SpeechDetector
 from botender.perception.perception_manager import PerceptionManager
 from botender.webcam_processor import WebcamProcessor
-from drink_recommendation import DrinkRecommender
+from botender.interaction.drink_recommendation import DrinkRecommender
 from pkg_resources import resource_filename
 
 logger = logging.getLogger(__name__)
 
-DRINKS_DATA_PATH = resource_filename(__name__, "drinks/drinks_with_categories_and_ranks.csv")
+DRINKS_DATA_PATH = resource_filename(
+    __name__, "drinks/drinks_with_categories_and_ranks.csv"
+)
 
 
 class InteractionCoordinator:
@@ -45,7 +47,6 @@ class InteractionCoordinator:
         webcam_processor: WebcamProcessor,
         gaze_coordinator: GazeCoordinatorThread,
         furhat: FurhatRemoteAPI,
-        recommender: DrinkRecommender,
     ):
         self._perception_manager = (
             perception_manager  # Used to get results from perception subsystem
@@ -235,11 +236,13 @@ class AcknowledgeEmotionState(InteractionState):
         furhat.say(text=f"You seem {emotion}.", blocking=True)
         self.context.transition_to(RecommendDrinksState())
 
+
 class RecommendDrinksState(InteractionState):
     """State to start the drink recommendation flow"""
 
     def handle(self):
         furhat = self.context._furhat
+        recommender = self.context._recommender
 
         self._context._perception_manager.detect_emotion()
 
@@ -250,17 +253,16 @@ class RecommendDrinksState(InteractionState):
             furhat.gesture(name="ExpressSad", blocking=False)
         elif emotion == "angry":
             furhat.gesture(name="ExpressFear", blocking=False)
-                        
 
         furhat.say(text=f"You seem {emotion}.", blocking=True)
 
-        furhat.say(text=f"Can I interest you in a drink?", blocking=True)
+        furhat.say(text="Can I interest you in a drink?", blocking=True)
 
         user_response = self.context.listen()
-        
 
-        taste_preference = 'Sour'  
-        random_recommendation = self.context.recommend_drink(emotion,taste_preference)
+        logger.debug(f"User response: {user_response}")
+
+        taste_preference = "Sour"
 
         # Call the recommend_drink method to get a recommendation
         random_recommendation = recommender.recommend_drink(emotion, taste_preference)
@@ -268,19 +270,21 @@ class RecommendDrinksState(InteractionState):
         # Since the recommendation is a DataFrame, extract the first row
         # and access the 'Cocktail' and 'Ingredients' columns
         if not random_recommendation.empty:
-            cocktail_name = random_recommendation['Cocktail'].iloc[0]
-            ingredients = random_recommendation['Ingredients'].iloc[0]
+            cocktail_name = random_recommendation["Cocktail"].iloc[0]
+            ingredients = random_recommendation["Ingredients"].iloc[0]
 
             # Format the string with the cocktail name and ingredients
-            answer = f"I can recommend you a \"{cocktail_name}\" which has the following ingredients: {ingredients}"            
+            answer = f'I can recommend you a "{cocktail_name}" which has the following ingredients: {ingredients}'
         else:
-            answer = ("No recommendation available for the given criteria.")
+            answer = "No recommendation available for the given criteria."
 
         furhat.say(text=answer, blocking=True)
-        furhat.say(text=f"If that sounds good to you, I will get started right away.", blocking=True)
-        
-        self.context.transition_to(FarewellState())
+        furhat.say(
+            text="If that sounds good to you, I will get started right away.",
+            blocking=True,
+        )
 
+        self.context.transition_to(FarewellState())
 
 
 class FarewellState(InteractionState):

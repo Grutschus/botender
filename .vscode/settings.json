@@ -11,5 +11,5 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "jupyter.debugJustMyCode": false,
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "off"
 }

@@ -9,12 +9,11 @@ import numpy as np
 from furhat_remote_api import FurhatRemoteAPI  # type: ignore
 from openai import OpenAI
 
-from botender.interaction.gaze_coordinator import GazeCoordinatorThread, GazeClasses
+from botender.interaction import gestures
+from botender.interaction.gaze_coordinator import GazeClasses, GazeCoordinatorThread
 from botender.perception.detectors.speech_detector import SpeechDetector
 from botender.perception.perception_manager import PerceptionManager
 from botender.webcam_processor import WebcamProcessor
-from botender.interaction import gestures
-from botender.interaction.gestures import GestureType
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +71,8 @@ class InteractionCoordinator:
         """Returns the emotion of the user."""
         while self._perception_manager.detects_emotion():
             time.sleep(1)
+        if self._perception_manager.current_result is None:
+            return "neutral"
         return self._perception_manager.current_result.emotion
 
     def set_gaze(self, gaze_class: GazeClasses) -> None:
@@ -101,6 +102,7 @@ class InteractionCoordinator:
                 if timeout > 3:
                     logger.info("Timeout reached.")
                     self.transition_to(SearchState())
+                    break
 
         return self
 
@@ -194,9 +196,9 @@ class IntroductionState(InteractionState):
             )
 
             name = response.choices[0].message.content
-            if name == "Error":
+            if name == "Error" or name is None:
                 furhat.gesture(
-                    body=gestures.get_random_gesture(GestureType.UNDERSTAND_ISSUE),
+                    body=gestures.get_random_gesture("understand_issue"),
                     blocking=False,
                 )
                 furhat.say(text="I'm sorry, I didn't quite get that.", blocking=True)
@@ -242,4 +244,11 @@ class SearchState(InteractionState):
     """State to handle looking for the user"""
 
     def handle(self):
-        pass
+        furhat = self.context._furhat
+
+        furhat.gesture(
+            body=gestures.get_random_gesture("understand_issue"), blocking=False
+        )
+        furhat.say(text="Where did you go?", blocking=True)
+
+        self.context.transition_to(FarewellState())

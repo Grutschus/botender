@@ -54,7 +54,7 @@ class DetectionWorker(Process):
         stop_event,
         detect_emotion_event,
     ):
-        super().__init__()
+        super().__init__(name="DetectionWorkerProcess")
         logger.debug("Initializing detection worker...")
         self._logging_queue = logging_queue
         self.frame_shape = frame_shape

@@ -1,6 +1,6 @@
 import numpy as np
 from feat import Detector  # type: ignore
-from pandas import DataFrame
+from typing import Tuple
 
 from botender.webcam_processor import Rectangle
 
@@ -11,10 +11,10 @@ class FacialExpressionDetector:
 
     _detector: Detector
     _faces: list[tuple[float, float, float, float, float]]
-    _features: DataFrame
+    _features: list
 
-    def __init__(self, device: str = "cpu"):
-        self._detector = Detector(device=device)
+    def __init__(self, detector: Detector):
+        self._detector = detector
 
     def detect_faces(self, frame) -> list[Rectangle]:
         """Detects faces in a frame and returns a list of rectangles representing the
@@ -23,14 +23,14 @@ class FacialExpressionDetector:
         self._faces = self._detector.detect_faces(frame)[0]
         return [((x1, y1), (x2, y2)) for x1, y1, x2, y2, _ in self._faces]
 
-    def extract_features(self, frame: np.ndarray) -> DataFrame:
+    def extract_features(self, frame: np.ndarray) -> Tuple[list, list]:
         """Extracts features from the faces detected in the last frame and returns them
-        as a DataFrame."""
+        as a list. Returns additionally a list of the faces that were used to extract."""
+
         faces = self._faces
         if len(faces) == 0:
-            return DataFrame()
+            return ([], faces)
 
         landmarks = self._detector.detect_landmarks(frame, [faces])
-        aus = self._detector.detect_aus(frame, landmarks)
 
-        return aus
+        return (landmarks, faces)

@@ -86,3 +86,25 @@ We can see that the neural network has a lower accuracy than the sklearn models.
 The evaluation of our models indicates that it is not possible to predict the emotion of the user with a high accuracy. The models tend to overfit the training data and the accuracy on the test data is around 60%. Implementing a simple neural network does not improve the accuracy. The reason of the low accuracies could be that the action units are not sufficient to predict the emotion of a face.
 
 To overcome this problem, we could train a convolution neural network (CNN) with the images of the faces as input. The CNN could learn the features of the faces itself and could be able to predict the emotion better. Another possibility would be to use a pretrained CNN and to train only the last layers with our dataset. This could be done with transfer learning. But these two approaches are not in the scope of our project.
+
+### Comparison to PyFeat classifier
+
+To further evaluate the performance of our model and its potential improvements, we compared it to the built-in classifier of PyFeat. We let the classifier predict the emotion of the images in our datasets and compared the results to the true labels. The following table shows the results of the evaluation of the PyFeat classifier:
+
+![Classification report of the pyfeat classifier](../images/cr_pyfeat.png "Classification report of the PyFeat model")
+
+In comparison to that, the following figures show the classification reports of our models:
+
+![Classification report of the model trained with PCA](../images/cr_w_pca.png "Classification report of the model trained with PCA")
+
+![Classification report of the model trained without PCA](../images/cr_wo_pca.png "Classification report of the model trained without PCA")
+
+It can be seen that the PyFeat classifier has only a slightly better accuracy than our models (65% instead of 63%). The biggest difference is that the PyFeat classifier has a much higher recall for the emotions "sad" (0.41 instead of 0.20) and "angry" (0.65 instead of 0.32). The differences show that the PyFeat model has in comparison to our model the capability to predict these emotions. But the recall values of "happy" (0.77 instead of 0.87) and "neutral" (0.65 instead of 0.81) are lower than the recall values of our models which indicates that our models are better in predicting these emotions. The macro f1 score is higher for the PyFeat classifier (0.62 instead of 0.54).
+
+The confusion matrix of the PyFeat predictions proves these observations. The following figure shows the confusion matrix of the PyFeat classifier:
+
+![Confusion matrix of the pyfeat classifier](../images/confusion_matrix_pyfeat.png "Confusion matrix of the PyFeat model")
+
+The confusion matrix has the highest values on the diagonal which indicates that the PyFeat classifier is able to predict the four different emotions.
+
+Overall is the PyFeat classifier not too much better than our models but we decided to use it in our user perception subsystem because it is able to predict the emotions "sad" and "angry" better than our models. Predicting these emotions is important for our scenario of a bartender because the bartender should be able to differentiate between different emotions and react accordingly.

@@ -6,11 +6,12 @@ from multiprocessing.connection import Connection
 
 import numpy as np
 import torch
-from pandas import DataFrame
 
 import botender.logging_utils as logging_utils
 from botender.perception.detectors import EmotionDetector, FacialExpressionDetector
 from botender.webcam_processor import Rectangle
+
+from feat import Detector  # type: ignore
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
@@ -25,8 +26,8 @@ EMOTION_DETECTION_FRAME_SKIP = 30
 class DetectionResult:
     faces: list[Rectangle]
     """A list of rectangles representing the faces detected in the frame."""
-    features: DataFrame
-    """A dataframe containing all the features extracted from the frame."""
+    features: list
+    """A list containing all the features extracted from the frame."""
     emotion: str
     """A string that defines the detected emotion."""
 
@@ -45,6 +46,8 @@ class DetectionWorker(Process):
     _last_emotions: list[str] = []
     _detect_emotion_counter: int = 0
 
+    _detector: Detector
+
     def __init__(
         self,
         logging_queue: Queue,
@@ -62,17 +65,18 @@ class DetectionWorker(Process):
         self._result_connection = result_connection
         self._stop_event = stop_event
         self._detect_emotion_event = detect_emotion_event
-        self._current_result = DetectionResult(
-            faces=[], features=DataFrame(), emotion="neutral"
-        )
+        self._current_result = DetectionResult(faces=[], features=[], emotion="neutral")
 
     def run(self):
         """Uses the detectors to detect faces and emotions in the newest frames."""
 
         logging_utils.configure_publisher(self._logging_queue)
         logger.debug("Successfully spawned detection worker. Initializing detector...")
-        self.facial_expression_detector = FacialExpressionDetector(device=_get_device())
-        self.emotion_detector = EmotionDetector()
+        self._detector = Detector(device=_get_device())
+        self.facial_expression_detector = FacialExpressionDetector(
+            detector=self._detector
+        )
+        self.emotion_detector = EmotionDetector(detector=self._detector)
         logger.debug("Successfully initialized detector. Starting work loop...")
         self._result_connection.send(True)  # Signal that we are ready
 
@@ -115,10 +119,14 @@ class DetectionWorker(Process):
             return clear_flag
 
         # extract features
-        features = self.facial_expression_detector.extract_features(self.work_frame)
+        features, faces = self.facial_expression_detector.extract_features(
+            self.work_frame
+        )
         self._current_result.features = features
         # predict emotion
-        emotion = self.emotion_detector.detect_emotion(features=features)
+        emotion = self.emotion_detector.detect_emotion(
+            frame=self.work_frame, faces=faces, features=features
+        )
         self._last_emotions.append(emotion)
 
         self._detect_emotion_counter += 1

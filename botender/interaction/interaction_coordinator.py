@@ -8,20 +8,38 @@ from abc import ABC, abstractmethod
 import numpy as np
 from furhat_remote_api import FurhatRemoteAPI  # type: ignore
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
+from pkg_resources import resource_filename
 
 from botender.interaction import gestures
+from botender.interaction.drink_recommendation import DrinkRecommender
 from botender.interaction.gaze_coordinator import GazeClasses, GazeCoordinatorThread
 from botender.perception.detectors.speech_detector import SpeechDetector
 from botender.perception.perception_manager import PerceptionManager
 from botender.webcam_processor import WebcamProcessor
-from botender.interaction.drink_recommendation import DrinkRecommender
-from pkg_resources import resource_filename
 
 logger = logging.getLogger(__name__)
 
 DRINKS_DATA_PATH = resource_filename(
     __name__, "drinks/drinks_with_categories_and_ranks.csv"
 )
+
+
+def get_openai_response(messages: list[ChatCompletionMessageParam]) -> str:
+    """Returns the response from OpenAI API"""
+    client = OpenAI()
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        temperature=1,
+        max_tokens=256,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+    )
+    if (answer := response.choices[0].message.content) is None:
+        raise ValueError("OpenAI API returned None")
+    return answer
 
 
 class InteractionCoordinator:
@@ -169,6 +187,32 @@ class IntroductionState(InteractionState):
         "It's a pleasure to meet you! What is your name?",
     ]
 
+    @staticmethod
+    def get_name_from_message(message: str) -> str:
+        """Returns the name from the message"""
+
+        if os.getenv("ENABLE_OPENAI_API") != "True":
+            return "Paul"
+
+        chat_messages = [
+            {
+                "role": "system",
+                "content": 'You are an endpoint.\nYou will receive a text that a user said upon asking for his/her name.\n\nLook for the name of the user in the text.\nIf you are certain about the name return it.\nIf you are uncertain, only return "Error".\n\nThe response should have the following structure:\n\n[NAME OR ERROR]\n\nExamples:\nInput: "Ah yeah so good to meet you how exciting I\'m John by the way"\n\nYour response:\nJohn\n\nInput: "I have never seen anything like you Botender."\n\nYour response:\nError',
+            },
+            {
+                "role": "user",
+                "content": message,
+            },
+        ]
+        try:
+            name = get_openai_response(chat_messages)  # type: ignore[arg-type]
+            if name == "Error":
+                raise ValueError("OpenAI API returned Error")
+        except ValueError as e:
+            raise ValueError from e
+
+        return name
+
     def handle(self):
         furhat = self.context._furhat
         introduction_question = self.INTRODUCTION_QUESTIONS[
@@ -180,38 +224,17 @@ class IntroductionState(InteractionState):
         user_response = self.context.listen()
         self._context._perception_manager.detect_emotion()
 
-        if os.getenv("ENABLE_OPENAI_API") != "True":
-            self.context.user_info["name"] = "Paul"
-        else:
-            client = OpenAI()
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": 'You are an endpoint.\nYou will receive a text that a user said upon asking for his/her name.\n\nLook for the name of the user in the text.\nIf you are certain about the name return it.\nIf you are uncertain, only return "Error".\n\nThe response should have the following structure:\n\n[NAME OR ERROR]\n\nExamples:\nInput: "Ah yeah so good to meet you how exciting I\'m John by the way"\n\nYour response:\nJohn\n\nInput: "I have never seen anything like you Botender."\n\nYour response:\nError',
-                    },
-                    {
-                        "role": "user",
-                        "content": user_response,
-                    },
-                ],
-                temperature=1,
-                max_tokens=256,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0,
+        try:
+            name = self.get_name_from_message(user_response)
+        except ValueError:
+            furhat.gesture(
+                body=gestures.get_random_gesture("understand_issue"),
+                blocking=False,
             )
+            furhat.say(text="I'm sorry, I didn't quite get that.", blocking=True)
+            return
 
-            name = response.choices[0].message.content
-            if name == "Error" or name is None:
-                furhat.gesture(
-                    body=gestures.get_random_gesture("understand_issue"),
-                    blocking=False,
-                )
-                furhat.say(text="I'm sorry, I didn't quite get that.", blocking=True)
-                return
-            self.context.user_info["name"] = name
+        self.context.user_info["name"] = name
 
         furhat.gesture(name="Smile", blocking=False)
         furhat.say(

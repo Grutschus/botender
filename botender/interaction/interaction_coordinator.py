@@ -4,24 +4,71 @@ import logging
 import os
 import time
 from abc import ABC, abstractmethod
+from typing import Literal
 
 import numpy as np
 from furhat_remote_api import FurhatRemoteAPI  # type: ignore
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
+from pkg_resources import resource_filename
 
 from botender.interaction import gestures
+from botender.interaction.drink_recommendation import DrinkRecommender
 from botender.interaction.gaze_coordinator import GazeClasses, GazeCoordinatorThread
 from botender.perception.detectors.speech_detector import SpeechDetector
 from botender.perception.perception_manager import PerceptionManager
 from botender.webcam_processor import WebcamProcessor
-from botender.interaction.drink_recommendation import DrinkRecommender
-from pkg_resources import resource_filename
 
 logger = logging.getLogger(__name__)
 
 DRINKS_DATA_PATH = resource_filename(
     __name__, "drinks/drinks_with_categories_and_ranks.csv"
 )
+
+
+def get_openai_response(messages: list[ChatCompletionMessageParam]) -> str:
+    """Returns the response from OpenAI API"""
+    client = OpenAI()
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        temperature=1,
+        max_tokens=256,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+    )
+    if (answer := response.choices[0].message.content) is None:
+        raise ValueError("OpenAI API returned None")
+    return answer
+
+
+def get_valence_from_message(message: str) -> Literal["Positive"] | Literal["Negative"]:
+    """Returns the valence from the message"""
+
+    if os.getenv("ENABLE_OPENAI_API") != "True":
+        return "Positive"
+
+    chat_messages = [
+        {
+            "role": "system",
+            "content": 'You are an endpoint.\nYou will receive a text that a user said upon asking a question.\n\nLook for the valence of the user in the text.\nIf you are certain about the valence return it.\nIf you are uncertain, only return "Error".\n\nThe response should have the following structure:\n\n[VALENCE OR ERROR]\n\nExamples:\nInput: "Ah yeah this drink sounds tasty!"\n\nYour response:\nPositive\n\nInput: "That doesn\'t sound very convincing."\n\nYour response:\nNegative',
+        },
+        {
+            "role": "user",
+            "content": message,
+        },
+    ]
+    try:
+        valence = get_openai_response(chat_messages)  # type: ignore[arg-type]
+        if valence == "Error":
+            raise ValueError("OpenAI API returned Error")
+        if valence not in ["Positive", "Negative"]:
+            raise ValueError("OpenAI API returned invalid valence")
+    except ValueError as e:
+        raise ValueError from e
+
+    return valence  # type: ignore[return-value]
 
 
 class InteractionCoordinator:
@@ -73,6 +120,9 @@ class InteractionCoordinator:
 
     def listen(self) -> str:
         """Listens to the user and returns the text."""
+        self._furhat.gesture(
+            body=gestures.get_random_gesture("listening"), blocking=False
+        )
         return self._speech_detector.capture_speech()
 
     def get_emotion(self) -> str:
@@ -169,6 +219,32 @@ class IntroductionState(InteractionState):
         "It's a pleasure to meet you! What is your name?",
     ]
 
+    @staticmethod
+    def get_name_from_message(message: str) -> str:
+        """Returns the name from the message"""
+
+        if os.getenv("ENABLE_OPENAI_API") != "True":
+            return "Paul"
+
+        chat_messages = [
+            {
+                "role": "system",
+                "content": 'You are an endpoint.\nYou will receive a text that a user said upon asking for his/her name.\n\nLook for the name of the user in the text.\nIf you are certain about the name return it.\nIf you are uncertain, only return "Error".\n\nThe response should have the following structure:\n\n[NAME OR ERROR]\n\nExamples:\nInput: "Ah yeah so good to meet you how exciting I\'m John by the way"\n\nYour response:\nJohn\n\nInput: "I have never seen anything like you Botender."\n\nYour response:\nError',
+            },
+            {
+                "role": "user",
+                "content": message,
+            },
+        ]
+        try:
+            name = get_openai_response(chat_messages)  # type: ignore[arg-type]
+            if name == "Error":
+                raise ValueError("OpenAI API returned Error")
+        except ValueError as e:
+            raise ValueError from e
+
+        return name
+
     def handle(self):
         furhat = self.context._furhat
         introduction_question = self.INTRODUCTION_QUESTIONS[
@@ -177,47 +253,26 @@ class IntroductionState(InteractionState):
         # TODO Add gestures
         furhat.say(text=introduction_question, blocking=True)
 
-        user_response = self.context.listen()
         self._context._perception_manager.detect_emotion()
+        user_response = self.context.listen()
 
-        if os.getenv("ENABLE_OPENAI_API") != "True":
-            self.context.user_info["name"] = "Paul"
-        else:
-            client = OpenAI()
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": 'You are an endpoint.\nYou will receive a text that a user said upon asking for his/her name.\n\nLook for the name of the user in the text.\nIf you are certain about the name return it.\nIf you are uncertain, only return "Error".\n\nThe response should have the following structure:\n\n[NAME OR ERROR]\n\nExamples:\nInput: "Ah yeah so good to meet you how exciting I\'m John by the way"\n\nYour response:\nJohn\n\nInput: "I have never seen anything like you Botender."\n\nYour response:\nError',
-                    },
-                    {
-                        "role": "user",
-                        "content": user_response,
-                    },
-                ],
-                temperature=1,
-                max_tokens=256,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0,
+        try:
+            name = self.get_name_from_message(user_response)
+        except ValueError:
+            furhat.gesture(
+                body=gestures.get_random_gesture("understand_issue"),
+                blocking=False,
             )
+            furhat.say(text="I'm sorry, I didn't quite get that.", blocking=True)
+            return
 
-            name = response.choices[0].message.content
-            if name == "Error" or name is None:
-                furhat.gesture(
-                    body=gestures.get_random_gesture("understand_issue"),
-                    blocking=False,
-                )
-                furhat.say(text="I'm sorry, I didn't quite get that.", blocking=True)
-                return
-            self.context.user_info["name"] = name
+        self.context.user_info["name"] = name
 
         furhat.gesture(name="Smile", blocking=False)
         furhat.say(
             text=f"Nice to meet you {self.context.user_info['name']}.", blocking=True
         )
-        self.context.transition_to(RecommendDrinksState())
+        self.context.transition_to(AcknowledgeEmotionState())
 
 
 class AcknowledgeEmotionState(InteractionState):
@@ -227,13 +282,113 @@ class AcknowledgeEmotionState(InteractionState):
         furhat = self.context._furhat
 
         emotion = self.context.get_emotion()
-        if emotion == "happy":
-            furhat.gesture(name="Smile", blocking=False)
-        elif emotion == "sad":
-            furhat.gesture(name="ExpressSad", blocking=False)
-        elif emotion == "angry":
-            furhat.gesture(name="ExpressFear", blocking=False)
-        furhat.say(text=f"You seem {emotion}.", blocking=True)
+        if emotion == "happy" or emotion == "neutral":
+            furhat.gesture(body=gestures.get_random_gesture("happy"), blocking=False)
+        elif emotion == "sad" or emotion == "angry":
+            furhat.gesture(body=gestures.get_random_gesture("concern"), blocking=False)
+
+        furhat.say(text=f"You seem a bit {emotion}.", blocking=True)
+        self.context.transition_to(AskDrinkState())
+
+
+class AskDrinkState(InteractionState):
+    """State to start the drink recommendation flow"""
+
+    DRINK_QUESTIONS = [
+        "Can I interest you in a drink?",
+        "Would you like a drink?",
+        "How about a drink?",
+        "Are you in the mood for a drink?",
+    ]
+
+    def handle(self):
+        furhat = self.context._furhat
+        drink_question = self.DRINK_QUESTIONS[
+            np.random.randint(0, len(self.DRINK_QUESTIONS))
+        ]
+        furhat.say(text=drink_question, blocking=True)
+
+        user_response = self.context.listen()
+
+        try:
+            valence = get_valence_from_message(user_response)
+        except ValueError:
+            furhat.gesture(
+                body=gestures.get_random_gesture("understand_issue"),
+                blocking=False,
+            )
+            furhat.say(text="I'm sorry, I didn't quite get that.", blocking=True)
+            return
+
+        if valence == "Positive":
+            furhat.gesture(body=gestures.get_random_gesture("happy"), blocking=False)
+            furhat.say(text="That's great!", blocking=True)
+            self.context.transition_to(AskTastePreference())
+        elif valence == "Negative":
+            furhat.gesture(body=gestures.get_random_gesture("concern"), blocking=False)
+            furhat.say(
+                text="Alright, just let me know if you change your mind", blocking=True
+            )
+            self.context.transition_to(FarewellState())
+
+
+class AskTastePreference(InteractionState):
+    TASTE_PREFERENCE_QUESTIONS = [
+        "What kind of cocktail do you like? I have sweet, milk-based, sour, and strong cocktails.",
+        "My cocktails are sour, sweet, milk-based, or strong. What do you prefer?",
+    ]
+
+    TASTE = Literal["Sour", "Sweet", "Milk-based", "Strong"]
+
+    def get_taste_preference_from_message(self, message: str) -> TASTE:
+        """Returns the taste preference from the message"""
+
+        if os.getenv("ENABLE_OPENAI_API") != "True":
+            return "Sour"
+
+        chat_messages = [
+            {
+                "role": "system",
+                "content": 'You are an endpoint.\nYou will receive a text that a user said upon asking for his/her taste preference. Available tastes are Sweet, Sour, Milk-based, and Strong.\n\nLook for the taste preference of the user in the text.\nIf you are certain about the taste preference return it.\nIf you are uncertain, only return "Error".\n\nThe response should have the following structure:\n\n[TASTE PREFERENCE OR ERROR]\n\nExamples:\nInput: "I like sweet cocktails."\n\nYour response:\nSweet\n\nInput: "I want something heavy with a lot of alcohol."\n\nYour response:\nStrong',
+            },
+            {
+                "role": "user",
+                "content": message,
+            },
+        ]
+        try:
+            taste_preference = get_openai_response(chat_messages)  # type: ignore[arg-type]
+            if taste_preference == "Error":
+                raise ValueError("OpenAI API returned Error")
+            if taste_preference not in ["Sour", "Sweet", "Milk-based", "Strong"]:
+                raise ValueError("OpenAI API returned invalid taste preference")
+        except ValueError as e:
+            raise ValueError from e
+
+        return taste_preference  # type: ignore[return-value]
+
+    def handle(self):
+        furhat = self.context._furhat
+
+        taste_preference_question = self.TASTE_PREFERENCE_QUESTIONS[
+            np.random.randint(0, len(self.TASTE_PREFERENCE_QUESTIONS))
+        ]
+        furhat.say(text=taste_preference_question, blocking=True)
+
+        user_response = self.context.listen()
+
+        try:
+            taste_preference = self.get_taste_preference_from_message(user_response)
+        except ValueError:
+            furhat.gesture(
+                body=gestures.get_random_gesture("understand_issue"),
+                blocking=False,
+            )
+            furhat.say(text="I'm sorry, I didn't quite get that.", blocking=True)
+            return
+
+        self.context.user_info["taste_preference"] = taste_preference
+
         self.context.transition_to(RecommendDrinksState())
 
 
@@ -241,26 +396,9 @@ class RecommendDrinksState(InteractionState):
     """State to start the drink recommendation flow"""
 
     def handle(self):
-        furhat = self.context._furhat
         recommender = self.context._recommender
-
-        self._context._perception_manager.detect_emotion()
-
+        furhat = self.context._furhat
         emotion = self.context.get_emotion()
-        if emotion == "happy":
-            furhat.gesture(name="Smile", blocking=False)
-        elif emotion == "sad":
-            furhat.gesture(name="ExpressSad", blocking=False)
-        elif emotion == "angry":
-            furhat.gesture(name="ExpressFear", blocking=False)
-
-        furhat.say(text=f"You seem {emotion}.", blocking=True)
-
-        furhat.say(text="Can I interest you in a drink?", blocking=True)
-
-        user_response = self.context.listen()
-
-        logger.debug(f"User response: {user_response}")
 
         taste_preference = "Sour"
 
@@ -283,8 +421,6 @@ class RecommendDrinksState(InteractionState):
             text="If that sounds good to you, I will get started right away.",
             blocking=True,
         )
-
-        self.context.transition_to(FarewellState())
 
 
 class FarewellState(InteractionState):

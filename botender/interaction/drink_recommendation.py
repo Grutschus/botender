@@ -10,7 +10,7 @@ class DrinkRecommender:
             'happy': ['Sweet', 'Sour', 'Milk-based'],
             'sad': ['Sweet', 'Milk-based'],
             'angry': ['Sour', 'Strong'],
-            'neutral': ['Sweet', 'Sour', 'Milk-based']
+            'neutral': ['Sweet', 'Sour', 'Milk-based','Strong']
         }
 
         # Filter for the relevant categories based on emotion

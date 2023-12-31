@@ -395,6 +395,31 @@ class AskTastePreference(InteractionState):
 class RecommendDrinksState(InteractionState):
     """State to start the drink recommendation flow"""
 
+    def generate_cocktail_description(self, message: str):
+        """Returns a cocktail description based on the ingredients"""
+
+        if os.getenv("ENABLE_OPENAI_API") != "True":
+            return "This cocktail has a great balance between sour and sweet."
+
+        chat_messages = [
+            {
+                "role": "system",
+                "content": 'You are an endpoint. You will receive a cocktail name along with its ingredients. Your task is to generate an enticing but short description of the cocktail in the following format: I can recommend you a "cocktailname". It is _ Examples: Input:  KING OF KINGSTON,"1 ounce gin, 1 teaspoon grapefruit, Â½ ounce crÃ¨me de, 1 teaspoon grenadine, 1 ounce pineapple juice1 ounce heavy cream, 1 ounce dark rum, 1 ounce light rum, Â½ ounce cherry brandy 1 pineapple slice, 4 ounces pineapple juiceYour response: I can recommend you a King of Kingston. It is a delightful mix with a high sweetness score, combining the unique flavors of grapefruit and pineapple with a touch of creamy crème de cacao.'
+            },
+            {
+                "role": "user",
+                "content": message,
+            },
+        ]
+        try:
+            cocktail_description = get_openai_response(chat_messages)  # type: ignore[arg-type]
+            if cocktail_description == "Error":
+                raise ValueError("OpenAI API returned Error")
+        except ValueError as e:
+            raise ValueError from e
+
+        return cocktail_description  # type: ignore[return-value]
+
     def handle(self):
         recommender = self.context._recommender
         furhat = self.context._furhat
@@ -410,17 +435,52 @@ class RecommendDrinksState(InteractionState):
         if not random_recommendation.empty:
             cocktail_name = random_recommendation["Cocktail"].iloc[0]
             ingredients = random_recommendation["Ingredients"].iloc[0]
+            cocktail_info = f'name: "{cocktail_name}" , ingredients: {ingredients}'
 
-            # Format the string with the cocktail name and ingredients
-            answer = f'I can recommend you a "{cocktail_name}" which has the following ingredients: {ingredients}'
+
+            try:
+                cocktail_description = self.generate_cocktail_description(cocktail_info)    
+                furhat.say(text=cocktail_description, blocking=True)            
+
+            except ValueError:
+                furhat.gesture(
+                    body=gestures.get_random_gesture("understand_issue"),
+                    blocking=False,
+                )
+                furhat.say(text="I'm sorry, I am having an error, please wait.", blocking=True)
+                return
+
         else:
             answer = "No recommendation available for the given criteria."
 
-        furhat.say(text=answer, blocking=True)
         furhat.say(
             text="If that sounds good to you, I will get started right away.",
             blocking=True,
         )
+
+        user_response = self.context.listen()
+
+        try:
+            valence = get_valence_from_message(user_response)
+        except ValueError:
+            furhat.gesture(
+                body=gestures.get_random_gesture("understand_issue"),
+                blocking=False,
+            )
+            furhat.say(text="I'm sorry, I didn't quite get that.", blocking=True)
+            return
+
+        if valence == "Positive":
+            furhat.gesture(body=gestures.get_random_gesture("happy"), blocking=False)
+            furhat.say(text="That's great!", blocking=True)
+            furhat.say(text=f"Here is your {cocktail_name}", blocking=True)
+            self.context.transition_to(FarewellState())
+        elif valence == "Negative":
+            furhat.gesture(body=gestures.get_random_gesture("concern"), blocking=False)
+            furhat.say(
+                text="Alright, I will look up another cocktail", blocking=True
+            )
+        
 
 
 class FarewellState(InteractionState):

@@ -250,7 +250,7 @@ class IntroductionState(InteractionState):
         introduction_question = self.INTRODUCTION_QUESTIONS[
             np.random.randint(0, len(self.INTRODUCTION_QUESTIONS))
         ]
-        # TODO Add gestures
+        furhat.gesture(name="Smile", blocking=False)
         furhat.say(text=introduction_question, blocking=True)
 
         self._context._perception_manager.detect_emotion()
@@ -278,16 +278,29 @@ class IntroductionState(InteractionState):
 class AcknowledgeEmotionState(InteractionState):
     """State to handle aknowledging the user's emotion"""
 
+    _emotion = ""
+
+    ACKNOWLEDGE_EMOTION_TEXTS: list[str] = [
+        f"You seem a bit {_emotion}.",
+        f"You look a bit {_emotion}.",
+        f"You seem a bit {_emotion} today.",
+        f"You look a bit {_emotion} today.",
+    ]
+
     def handle(self):
         furhat = self.context._furhat
 
-        emotion = self.context.get_emotion()
-        if emotion == "happy" or emotion == "neutral":
+        self._emotion = self.context.get_emotion()
+        if self._emotion == "happy" or self._emotion == "neutral":
             furhat.gesture(body=gestures.get_random_gesture("happy"), blocking=False)
-        elif emotion == "sad" or emotion == "angry":
+        elif self._emotion == "sad" or self._emotion == "angry":
             furhat.gesture(body=gestures.get_random_gesture("concern"), blocking=False)
 
-        furhat.say(text=f"You seem a bit {emotion}.", blocking=True)
+        acknowledge_emotion_text = self.ACKNOWLEDGE_EMOTION_TEXTS[
+            np.random.randint(0, len(self.ACKNOWLEDGE_EMOTION_TEXTS))
+        ]
+
+        furhat.say(text=acknowledge_emotion_text, blocking=True)
         self.context.transition_to(AskDrinkState())
 
 
@@ -299,6 +312,20 @@ class AskDrinkState(InteractionState):
         "Would you like a drink?",
         "How about a drink?",
         "Are you in the mood for a drink?",
+    ]
+
+    POSITIVE_VALENCE_RESPONSES = [
+        "That's great!",
+        "That's awesome!",
+        "That's great to hear!",
+        "That's great to know!",
+    ]
+
+    NEGATIVE_VALENCE_RESPONSES = [
+        "I'm sorry to hear that.",
+        "I'm sorry to hear that, maybe next time.",
+        "I'm sorry to hear that, maybe next time you will be in the mood for a drink.",
+        "Alright, just let me know if you change your mind.",
     ]
 
     def handle(self):
@@ -322,13 +349,17 @@ class AskDrinkState(InteractionState):
 
         if valence == "Positive":
             furhat.gesture(body=gestures.get_random_gesture("happy"), blocking=False)
-            furhat.say(text="That's great!", blocking=True)
+            positive_valence_response = self.POSITIVE_VALENCE_RESPONSES[
+                np.random.randint(0, len(self.POSITIVE_VALENCE_RESPONSES))
+            ]
+            furhat.say(text=positive_valence_response, blocking=True)
             self.context.transition_to(AskTastePreference())
         elif valence == "Negative":
             furhat.gesture(body=gestures.get_random_gesture("concern"), blocking=False)
-            furhat.say(
-                text="Alright, just let me know if you change your mind", blocking=True
-            )
+            negative_valence_response = self.NEGATIVE_VALENCE_RESPONSES[
+                np.random.randint(0, len(self.NEGATIVE_VALENCE_RESPONSES))
+            ]
+            furhat.say(text=negative_valence_response, blocking=True)
             self.context.transition_to(FarewellState())
 
 
@@ -465,11 +496,22 @@ class RecommendDrinksState(InteractionState):
 class FeedbackForDrinkRecommendationState(InteractionState):
     """State to handle feedback for drink recommendation"""
 
+    FEEDBACK_QUESTIONS = [
+        "Does that sound good to you?",
+        "Would you like to try that?",
+        "Does that sound like something you would enjoy?",
+        "Would you like to try that cocktail?",
+    ]
+
     def handle(self):
         furhat = self.context._furhat
 
+        feedback_question = self.FEEDBACK_QUESTIONS[
+            np.random.randint(0, len(self.FEEDBACK_QUESTIONS))
+        ]
+
         furhat.say(
-            text="If that sounds good to you, I will get started right away.",
+            text=feedback_question,
             blocking=True,
         )
 
@@ -501,10 +543,20 @@ class FeedbackForDrinkRecommendationState(InteractionState):
 class FarewellState(InteractionState):
     """State to handle saying goodbye to the user"""
 
+    FAREWELL_TEXTS = [
+        "It was a pleasure serving you! Goodbye!",
+        "I hope you enjoyed your drink! Goodbye!",
+        "I hope to see you again soon! Bye!",
+        "I hope you have a good day! Bye!",
+    ]
+
     def handle(self):
         furhat = self.context._furhat
-        furhat.gesture(name="BigSmile", blocking=False)
-        furhat.say(text="Goodbye!", blocking=True)
+        furhat.gesture(body=gestures.get_random_gesture("happy"), blocking=False)
+        farewell_text = self.FAREWELL_TEXTS[
+            np.random.randint(0, len(self.FAREWELL_TEXTS))
+        ]
+        furhat.say(text=farewell_text, blocking=True)
 
         time.sleep(10)
 
@@ -512,12 +564,23 @@ class FarewellState(InteractionState):
 class SearchState(InteractionState):
     """State to handle looking for the user"""
 
+    SEARCH_QUESTIONS = [
+        "Where did you go?",
+        "Where did you go? I can't see you.",
+        "Are you still there?",
+        "Are you still there? I can't see you anymore.",
+        "Whera are you?",
+    ]
+
     def handle(self):
         furhat = self.context._furhat
 
         furhat.gesture(
             body=gestures.get_random_gesture("understand_issue"), blocking=False
         )
-        furhat.say(text="Where did you go?", blocking=True)
+        search_question = self.SEARCH_QUESTIONS[
+            np.random.randint(0, len(self.SEARCH_QUESTIONS))
+        ]
+        furhat.say(text=search_question, blocking=True)
 
         self.context.transition_to(FarewellState())

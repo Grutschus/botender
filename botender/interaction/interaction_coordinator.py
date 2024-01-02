@@ -40,6 +40,7 @@ def get_openai_response(messages: list[ChatCompletionMessageParam]) -> str:
     )
     if (answer := response.choices[0].message.content) is None:
         raise ValueError("OpenAI API returned None")
+    logger.debug(f"OpenAI API response: {answer}")
     return answer
 
 
@@ -278,27 +279,28 @@ class IntroductionState(InteractionState):
 class AcknowledgeEmotionState(InteractionState):
     """State to handle aknowledging the user's emotion"""
 
-    _emotion = ""
-
     ACKNOWLEDGE_EMOTION_TEXTS: list[str] = [
-        f"You seem a bit {_emotion}.",
-        f"You look a bit {_emotion}.",
-        f"You seem a bit {_emotion} today.",
-        f"You look a bit {_emotion} today.",
+        "You seem a bit {emotion}.",
+        "You look a bit {emotion}.",
+        "You seem a bit {emotion} today.",
+        "You look a bit {emotion} today.",
     ]
 
     def handle(self):
         furhat = self.context._furhat
 
-        self._emotion = self.context.get_emotion()
-        if self._emotion == "happy" or self._emotion == "neutral":
+        emotion = self.context.get_emotion()
+        if emotion == "happy" or emotion == "neutral":
             furhat.gesture(body=gestures.get_random_gesture("happy"), blocking=False)
-        elif self._emotion == "sad" or self._emotion == "angry":
+        elif emotion == "sad" or emotion == "angry":
             furhat.gesture(body=gestures.get_random_gesture("concern"), blocking=False)
 
         acknowledge_emotion_text = self.ACKNOWLEDGE_EMOTION_TEXTS[
             np.random.randint(0, len(self.ACKNOWLEDGE_EMOTION_TEXTS))
         ]
+
+        # Evaluation of f-string was postponed to runtime
+        acknowledge_emotion_text = eval(f"f'{acknowledge_emotion_text}'")
 
         furhat.say(text=acknowledge_emotion_text, blocking=True)
         self.context.transition_to(AskDrinkState())

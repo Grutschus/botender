@@ -212,22 +212,19 @@ class WebcamProcessor:
     ):
         """Add debug info to the current frame."""
 
-        text = "\n".join(
-            [
-                f"{key}: {value}"
-                for key, value in self._debug_info.items()
-                if value is not None
-            ]
-        )
-        modifier_func = partial(
-            cv2.putText,
-            text=text,
-            org=(0, self._FRAME_HEIGHT - 10),
-            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-            fontScale=0.5,
-            color=(255, 0, 0),
-            thickness=1,
-        )
+        def modifier_func(frame: np.ndarray) -> np.ndarray:
+            for i, (key, value) in enumerate(self._debug_info.items()):
+                if value is not None:
+                    frame = cv2.putText(
+                        frame,
+                        text=f"{key}: {value}",
+                        org=(0, self._FRAME_HEIGHT - 10 * (i + 1)),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.5,
+                        color=(255, 0, 0),
+                        thickness=1,
+                    )
+            return frame
 
         self.add_frame_modifier(modifier_func, "debug_info")
 

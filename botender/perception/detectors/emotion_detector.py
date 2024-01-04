@@ -1,15 +1,15 @@
 import logging
 
+import numpy as np
 from feat import Detector  # type: ignore
 from feat.utils import FEAT_EMOTION_COLUMNS  # type: ignore
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
 PYFEAT_EMOTIONS_TO_EMOTIONS = {
     "neutral": "neutral",
     "anger": "angry",
-    "happy": "happy",
+    "happiness": "happy",
     "sadness": "sad",
 }
 

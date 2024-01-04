@@ -12,11 +12,13 @@ LOGGING_PROCESS: Process | None = None
 
 class LogFilter(Filter):
     def filter(self, record):
-        """Filter out useless pyfeat logs."""
+        """Filter out useless pyfeat and openai logs."""
         results = True
         if record.module == "detector":
             if record.funcName == "detect_faces" and record.levelno <= logging.WARNING:
                 results = False
+        if record.module in ["_trace", "_base_client", "_client", "_config"]:
+            results = False
         return results
 
 
@@ -67,7 +69,8 @@ def _configure_listener(debug: bool):
     root_logger = logging.getLogger()
     root_logger.addHandler(console_handler)
     root_logger.addHandler(file_handler)
-    root_logger.addFilter(LogFilter())
+    for handler in root_logger.handlers:
+        handler.addFilter(LogFilter())
 
     if debug:
         root_logger.setLevel(logging.DEBUG)

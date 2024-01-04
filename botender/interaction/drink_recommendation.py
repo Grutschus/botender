@@ -15,7 +15,7 @@ class DrinkRecommender:
 
         # Filter for the relevant categories based on emotion
         relevant_categories = emotion_categories.get(emotion.lower(), [])
-        filtered_drinks = self.drinks_data[self.drinks_data['Category_with_Scales'].str.contains('|'.join(relevant_categories))]
+        filtered_drinks = self.drinks_data[self.drinks_data['Category_with_Scales'].isin(relevant_categories)]
 
         # Further filter based on taste preference
         taste_filtered_drinks = filtered_drinks[filtered_drinks['Category_with_Scales'].str.contains(taste_preference)]

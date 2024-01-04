@@ -53,7 +53,25 @@ def get_valence_from_message(message: str) -> Literal["Positive"] | Literal["Neg
     chat_messages = [
         {
             "role": "system",
-            "content": 'You are an endpoint.\nYou will receive a text that a user said upon asking a question.\n\nLook for the valence of the user in the text.\nIf you are certain about the valence return it.\nIf you are uncertain, only return "Error".\n\nThe response should have the following structure:\n\n[VALENCE OR ERROR]\n\nExamples:\nInput: "Ah yeah this drink sounds tasty!"\n\nYour response:\nPositive\n\nInput: "That doesn\'t sound very convincing."\n\nYour response:\nNegative',
+            "content": """You are an endpoint.
+                You will receive a text that a user said upon asking a question.
+                The question is some kind of yes or no question. The user's response can therefore be either positive or negative.
+
+                From the user input you will extract whether the user answered the question in a positive or negative manner.
+
+                If the user sounds uncertain or asks a counterquestion, it usually means that the response is negative.
+
+                If the user doesn't say anything that can be interpreted as a response, return Error.
+
+                The response should have the following structure:
+                [Positive | Negative | Error]
+
+                Examples:
+                Input: "Ah yeah this drink sounds tasty!"
+                Your response: Positive
+
+                Input: "Maybe another time."
+                Your response: Negative""",
         },
         {
             "role": "user",
@@ -87,6 +105,7 @@ class InteractionCoordinator:
     _recommender: DrinkRecommender
     _state: InteractionState
     _previous_state: InteractionState | None
+    _last_emotion_detection: float = 0
     user_info: dict[str, str]
 
     def __init__(
@@ -128,8 +147,8 @@ class InteractionCoordinator:
 
     def get_emotion(self) -> str:
         """Returns the emotion of the user."""
-        while self._perception_manager.detects_emotion():
-            time.sleep(1)
+        # while self._perception_manager.detects_emotion():
+        #     time.sleep(1)
         if self._perception_manager.current_result is None:
             return "neutral"
         return self._perception_manager.current_result.emotion
@@ -162,6 +181,10 @@ class InteractionCoordinator:
                     logger.info("Timeout reached.")
                     self.transition_to(SearchState())
                     break
+
+        if time.time() - self._last_emotion_detection > 5:
+            self._perception_manager.detect_emotion()
+            self._last_emotion_detection = time.time()
 
         return self
 
@@ -254,7 +277,7 @@ class IntroductionState(InteractionState):
         furhat.gesture(name="Smile", blocking=False)
         furhat.say(text=introduction_question, blocking=True)
 
-        self._context._perception_manager.detect_emotion()
+        # self._context._perception_manager.detect_emotion()
         user_response = self.context.listen()
 
         try:
@@ -280,10 +303,10 @@ class AcknowledgeEmotionState(InteractionState):
     """State to handle aknowledging the user's emotion"""
 
     ACKNOWLEDGE_EMOTION_TEXTS: list[str] = [
-        "You seem a bit {emotion}.",
-        "You look a bit {emotion}.",
-        "You seem a bit {emotion} today.",
-        "You look a bit {emotion} today.",
+        "You seem {emotion}.",
+        "You look {emotion}.",
+        "You seem {emotion} today.",
+        "You look {emotion} today.",
     ]
 
     def handle(self):
@@ -382,7 +405,28 @@ class AskTastePreference(InteractionState):
         chat_messages = [
             {
                 "role": "system",
-                "content": 'You are an endpoint.\nYou will receive a text that a user said upon asking for his/her taste preference. Available tastes are Sweet, Sour, Milk-based, and Strong.\n\nLook for the taste preference of the user in the text.\nIf you are certain about the taste preference return it.\nIf you are uncertain, only return "Error".\n\nThe response should have the following structure:\n\n[TASTE PREFERENCE OR ERROR]\n\nExamples:\nInput: "I like sweet cocktails."\n\nYour response:\nSweet\n\nInput: "I want something heavy with a lot of alcohol."\n\nYour response:\nStrong',
+                "content": """You are an endpoint.
+                    You will receive a text that a user said upon asking for his/her taste preference.
+                    Available tastes are
+                    Sweet, Sour, Milk-based, and Strong.
+
+                    Look for the taste preference of the user in the text.
+
+                    If you are certain about the taste preference return it.
+                    You can also infer a taste from the message, if it fits. For example, "I have had a rough day" requires something strong and "I'm a real sweet-tooth" probably means the user wants something sweet.
+
+                    If it is completely uncertain, return Error.
+
+                    The response should have the following structure:
+                    [Sweet | Sour | Milk-based | Strong | Error]
+
+                    Examples:
+
+                    Input: "I like sweet cocktails."
+                    Your response: Sweet
+
+                    Input: "I want something heavy with a lot of alcohol."
+                    Your response: Strong""",
             },
             {
                 "role": "user",
@@ -556,7 +600,6 @@ class FarewellState(InteractionState):
 
     FAREWELL_TEXTS = [
         "It was a pleasure serving you! Goodbye!",
-        "I hope you enjoyed your drink! Goodbye!",
         "I hope to see you again soon! Bye!",
         "I hope you have a good day! Bye!",
     ]

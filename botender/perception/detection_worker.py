@@ -6,12 +6,11 @@ from multiprocessing.connection import Connection
 
 import numpy as np
 import torch
+from feat import Detector  # type: ignore
 
 import botender.logging_utils as logging_utils
 from botender.perception.detectors import EmotionDetector, FacialExpressionDetector
 from botender.webcam_processor import Rectangle
-
-from feat import Detector  # type: ignore
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)

@@ -439,7 +439,15 @@ class RecommendDrinksState(InteractionState):
         chat_messages = [
             {
                 "role": "system",
-                "content": 'You are an endpoint. You will receive a cocktail name along with its ingredients. Your task is to generate an enticing but short description of the cocktail in the following format: I can recommend you a "cocktailname". It is _ Examples: Input:  KING OF KINGSTON,"1 ounce gin, 1 teaspoon grapefruit, Â½ ounce crÃ¨me de, 1 teaspoon grenadine, 1 ounce pineapple juice1 ounce heavy cream, 1 ounce dark rum, 1 ounce light rum, Â½ ounce cherry brandy 1 pineapple slice, 4 ounces pineapple juiceYour response: I can recommend you a King of Kingston. It is a delightful mix with a high sweetness score, combining the unique flavors of grapefruit and pineapple with a touch of creamy crème de cacao.',
+                "content": """You are an endpoint.
+                    You will receive a cocktail name along with its ingredients.
+                    Your task is to generate an enticing but short description of the
+                    cocktail in the following format: I can recommend you a "cocktailname".
+                    It is _ Examples: Input:  KING OF KINGSTON,"1 ounce gin, 1 teaspoon grapefruit, 0.5 ounce creme de,
+                    1 teaspoon grenadine, 1 ounce pineapple juice1 ounce heavy cream, 1 ounce dark rum,
+                    1 ounce light rum, Â½ ounce cherry brandy 1 pineapple slice, 4 ounces pineapple juiceYour response:
+                    I can recommend you a King of Kingston. It is a delightful mix with a high sweetness score,
+                    combining the unique flavors of grapefruit and pineapple with a touch of creamy crème de cacao.""",
             },
             {
                 "role": "user",
@@ -476,6 +484,7 @@ class RecommendDrinksState(InteractionState):
             self.context.user_info["cocktail_name"] = cocktail_name
             ingredients = random_recommendation["Ingredients"].iloc[0]
 
+            furhat.gesture(body=gestures.get_random_gesture("thinking"), blocking=False)
             cocktail_description = self.generate_cocktail_description(
                 cocktail_name, ingredients
             )
@@ -571,18 +580,34 @@ class SearchState(InteractionState):
         "Where did you go? I can't see you.",
         "Are you still there?",
         "Are you still there? I can't see you anymore.",
-        "Whera are you?",
+        "Where are you?",
     ]
 
     def handle(self):
         furhat = self.context._furhat
+        question_count = 0
+        while not self.context._perception_manager.face_present:
+            furhat.gesture(
+                body=gestures.get_random_gesture("understand_issue"), blocking=False
+            )
+            search_question = self.SEARCH_QUESTIONS[
+                np.random.randint(0, len(self.SEARCH_QUESTIONS))
+            ]
+            furhat.say(text=search_question, blocking=True)
+            question_count += 1
+            time.sleep(2)
+            if question_count >= 2:
+                furhat.gesture(
+                    body=gestures.get_random_gesture("concern"),
+                    blocking=False,
+                )
+                furhat.say(
+                    text="I'm sorry, I can't find you. I will look for you later.",
+                    blocking=True,
+                )
+                self.context.transition_to(FarewellState())
+                return
 
-        furhat.gesture(
-            body=gestures.get_random_gesture("understand_issue"), blocking=False
-        )
-        search_question = self.SEARCH_QUESTIONS[
-            np.random.randint(0, len(self.SEARCH_QUESTIONS))
-        ]
-        furhat.say(text=search_question, blocking=True)
-
-        self.context.transition_to(FarewellState())
+        furhat.gesture(body=gestures.get_random_gesture("happy"), blocking=False)
+        furhat.say(text="Oh, there you are!", blocking=True)
+        self.context.transition_to(self.context._previous_state)

@@ -10,7 +10,7 @@ This was achieved by enabling our AI system to offer personalized greetings.
 Our approach involved a two-phase conversation structure. Initially, the AI's focus is on gathering information from the user, with a particular emphasis on detecting the user's name. The subsequent phase involves the potential use of this name in the AI's response. A unique aspect of our system is the AI's autonomous role in determining whether it is confident enough to use the identified name.
 
 ### Crafting the right prompt for AI
-The primary challenge for this task was to create a prompt that guides the AI effectively. The goal was for the AI to recognize when a user mentions their name in the beginning oft he conversation and then use this information in its response. The promt tells the system to search the text for the user's name, identify it, and then return "Error" or the identified name.To further increase the accuracy, a sample with the desired output and input is given.
+The primary challenge for this task was to create a prompt that guides the AI effectively. The goal was for the AI to recognize when a user mentions their name in the beginning of the conversation and then use this information in its response. The promt tells the system to search the text for the user's name, identify it, and then return "Error" or the identified name.To further increase the accuracy, a sample with the desired output and input is given.
 
 ### AI's autonomous confidence assessment
 

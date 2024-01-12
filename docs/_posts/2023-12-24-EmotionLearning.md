@@ -5,7 +5,7 @@ title: Expressing emotions
 Our robotic bartender has now  mastered expressing emotions. Botender can convey feelings ranging from happiness to concern.
 
 
-Botender selects a gesture based on the perceived emotion of the customer, using a randomization function to keep interactions unpredictable and varied. 
+Botender selects a gesture based on the perceived emotion of the customer, using a randomization function to keep interactions unpredictable and varied. It can use the gestures in every other scenario of the interaction with the customer as well.
 
 
 ## Technical Background
@@ -19,10 +19,20 @@ The randomization function first retrieves a list of possible gestures for the s
 
 - **Dynamic Interaction Flow**: The gesture system is integrated into Botender's interaction flow, allowing it to seamlessly switch between different gestures based on the conversation's context and the customer's emotional state.
 
+## Gesture Categories
 
+We added gestures in the following categories:
 
-## Example: The Happy Gesture
+- Concern
+- Happy
+- Idle
+- Laugh
+- Listening
+- Thinking
+- Misunderstanding
 
----- Include Picture -----
+## Example: The Laugh Gesture
 
-The 'Happy' gesture JSON files reveal a sequence of frames, each dictating specific facial movements. Parameters like `EYE_BLINK_LEFT`, `MOUTH_SMILE_LEFT`, and `NECK_TILT` are fine-tuned to mimic human expressions, ensuring that Botender's gestures are as lifelike and relatable as possible.
+The following gif shows one of the laughing gestures:
+
+![Laugh Gesture](../images/laugh_gif.gif "Laugh Gesture")
